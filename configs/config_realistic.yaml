@@ -1,0 +1,147 @@
+# Realistic Portfolio Configuration - Weekly Rebalancing
+# Target: <5% max drawdown, Sharpe >1.0
+# Strategy: No crypto, cash allocation, weekly rebalancing, diverse stocks
+
+data:
+  data_dir: 'data'
+  assets:
+    # Technology (diversified)
+    - AAPL      # Apple
+    - MSFT      # Microsoft
+    - GOOGL     # Alphabet
+    - NVDA      # NVIDIA
+    - META      # Meta
+    - ADBE      # Adobe
+    - CRM       # Salesforce
+    - ORCL      # Oracle
+    
+    # Consumer/Retail
+    - AMZN      # Amazon
+    - TSLA      # Tesla
+    - WMT       # Walmart
+    - COST      # Costco
+    - NKE       # Nike
+    
+    # Finance
+    - JPM       # JP Morgan
+    - BAC       # Bank of America
+    - V         # Visa
+    - MA        # Mastercard
+    
+    # Healthcare
+    - JNJ       # Johnson & Johnson
+    - UNH       # UnitedHealth
+    - PFE       # Pfizer
+    - ABBV      # AbbVie
+    
+    # Energy/Materials
+    - XOM       # Exxon Mobil
+    - CVX       # Chevron
+    
+    # Market/Commodity ETFs
+    - SPY       # S&P 500
+    - QQQ       # NASDAQ 100
+    - IWM       # Russell 2000 (Small Cap)
+    - GLD       # Gold
+    - SLV       # Silver
+    
+    # Defensive Bonds
+    - TLT       # 20+ Year Treasury
+    - IEF       # 7-10 Year Treasury
+    - SHY       # 1-3 Year Treasury
+    - AGG       # Aggregate Bonds
+    - LQD       # Investment Grade Corporate Bonds
+    
+    # CASH placeholder (will be handled as residual weight)
+    
+  start_date: "2010-01-01"
+  end_date: "2024-12-31"
+  train_ratio: 0.7
+  frequency: "1wk"  # Weekly rebalancing
+
+features:
+  lookback_window: 26  # 26 weeks = ~6 months lookback
+  use_prices: true
+  use_returns: true
+  use_log_returns: true
+  
+  sma_periods: [4, 13, 26, 52]  # 1mo, 3mo, 6mo, 1yr in weeks
+  ema_periods: [4, 13, 26, 52]
+  ema_alpha: 0.1
+  momentum_periods: [4, 13, 26, 52]
+  
+  normalize_prices: true
+  normalize_method: "zscore"
+  rolling_normalize: true
+  rolling_window: 52  # 1 year rolling normalization
+
+environment:
+  initial_balance: 100000.0
+  transaction_cost: 0.001  # 0.1% - realistic for weekly rebalancing
+  allow_short: false
+  max_leverage: 1.0  # Can hold up to 100% cash (0% invested)
+  slippage: 0.0
+  
+  reward_type: "risk_adjusted"
+  risk_penalty_lambda: 4.0  # Higher penalty for risk
+  volatility_window: 26  # 6 months
+  risk_free_rate: 0.02
+  
+  turnover_penalty: 0.0
+
+agents:
+  ppo:
+    policy: "MlpPolicy"
+    learning_rate: 0.00002  # Lower for stability with more assets
+    n_steps: 4096
+    batch_size: 256
+    n_epochs: 10
+    gamma: 0.99
+    gae_lambda: 0.95
+    clip_range: 0.2
+    ent_coef: 0.03  # Higher exploration for 34 assets + cash
+    vf_coef: 0.5
+    max_grad_norm: 0.5
+    network_arch: [1024, 512, 256, 128]  # Large network for complex patterns
+
+training:
+  total_timesteps: 750000  # Longer training for weekly data
+  eval_freq: 75000
+  n_eval_episodes: 5
+  save_freq: 75000
+  log_interval: 10
+  verbose: 1
+  tensorboard_log: "logs"
+  device: "cpu"
+
+evaluation:
+  n_eval_episodes: 1
+  deterministic: true
+  render: false
+
+benchmarks:
+  equal_weight: true
+  mean_variance: true
+  momentum: true
+  mv_lookback: 52  # 1 year for weekly data
+  mv_target_return: null
+  mv_allow_short: false
+
+metrics:
+  annualized_factor: 52  # Weekly data
+  risk_free_rate: 0.02
+  confidence_level: 0.95
+
+visualization:
+  figsize: [12, 6]
+  dpi: 100
+  style: "seaborn-v0_8-darkgrid"
+  save_format: "png"
+
+paths:
+  data_dir: "data"
+  models_dir: "models"
+  results_dir: "results"
+  logs_dir: "logs"
+
+seed: 42

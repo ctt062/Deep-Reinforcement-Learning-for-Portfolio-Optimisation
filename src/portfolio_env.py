@@ -83,10 +83,11 @@ class PortfolioEnv(gym.Env):
         self.reward_type = reward_type
         self.risk_penalty_lambda = risk_penalty_lambda
         self.volatility_window = volatility_window
-        self.risk_free_rate = risk_free_rate / 252  # Daily risk-free rate
+        self.risk_free_rate = risk_free_rate
         self.allow_short = allow_short
         self.max_leverage = max_leverage
         self.turnover_penalty = turnover_penalty
+        self.frequency = 'weekly'  # Default, can be overridden
         
         # Portfolio parameters
         self.n_assets = len(prices.columns)
@@ -203,28 +204,27 @@ class PortfolioEnv(gym.Env):
     
     def _project_weights(self, weights: np.ndarray) -> np.ndarray:
         """
-        Project weights onto feasible set: sum to 1, satisfy constraints.
+        Project weights onto feasible set: sum to <= 1, satisfy constraints.
+        Allows dynamic cash allocation (remainder = cash position).
         
         Args:
             weights: Raw weights.
             
         Returns:
-            Valid weights satisfying all constraints.
+            Valid weights satisfying all constraints. Sum can be < 1 (cash).
         """
-        # Clip weights
+        # Clip weights to [0, 1] for each asset
         if not self.allow_short:
-            weights = np.maximum(weights, 0)
+            weights = np.clip(weights, 0, 1)
         
-        # Normalize to sum to 1
+        # Normalize only if sum exceeds max_leverage (typically 1.0)
         weight_sum = np.sum(np.abs(weights))
-        if weight_sum > 0:
-            weights = weights / weight_sum
-        else:
-            weights = np.ones(self.n_assets) / self.n_assets
+        if weight_sum > self.max_leverage:
+            weights = weights * self.max_leverage / weight_sum
         
-        # Apply leverage constraint
-        if np.sum(np.abs(weights)) > self.max_leverage:
-            weights = weights * self.max_leverage / np.sum(np.abs(weights))
+        # Otherwise allow sum < 1 (remainder is cash)
+        # Cash allocation = 1 - sum(weights)
+        # This enables dynamic risk management
         
         return weights
     
@@ -345,8 +345,16 @@ class PortfolioEnv(gym.Env):
         data_idx = self.lookback_window + self.current_step + 1
         period_returns = self.returns.iloc[data_idx].values
         
-        # Calculate gross portfolio return: w_{t-1}^T * r_t
-        gross_return = np.dot(self.weights, period_returns)
+        # Calculate cash allocation (remainder after asset allocation)
+        cash_weight_old = 1.0 - np.sum(self.weights)
+        cash_weight_new = 1.0 - np.sum(new_weights)
+        
+        # Cash return (assume risk-free rate / 52 for weekly, / 252 for daily)
+        periods_per_year = 52 if hasattr(self, 'frequency') else 252
+        cash_return = self.risk_free_rate / periods_per_year
+        
+        # Calculate gross portfolio return: w_{t-1}^T * r_t + cash_weight * r_cash
+        gross_return = np.dot(self.weights, period_returns) + cash_weight_old * cash_return
         
         # Calculate net return after costs
         net_return = gross_return - transaction_cost
@@ -389,6 +397,7 @@ class PortfolioEnv(gym.Env):
             'turnover': turnover,
             'transaction_cost': transaction_cost,
             'weights': new_weights.copy(),
+            'cash_weight': cash_weight_new,  # Track cash allocation
         }
         
         return next_state, reward, terminated, truncated, info
