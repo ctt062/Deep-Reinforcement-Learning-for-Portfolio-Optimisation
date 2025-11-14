@@ -215,12 +215,30 @@ class PortfolioEnv(gym.Env):
         if not self.allow_short:
             weights = np.maximum(weights, 0)
         
+        # Apply maximum position size constraint (15% per asset)
+        max_position = 0.15
+        weights = np.clip(weights, 0 if not self.allow_short else -max_position, max_position)
+        
         # Normalize to sum to 1
         weight_sum = np.sum(np.abs(weights))
         if weight_sum > 0:
             weights = weights / weight_sum
         else:
             weights = np.ones(self.n_assets) / self.n_assets
+        
+        # Re-apply position limits after normalization (iterative projection)
+        for _ in range(3):  # Iterate a few times to satisfy both constraints
+            over_limit = np.abs(weights) > max_position
+            if not np.any(over_limit):
+                break
+            weights[over_limit] = np.sign(weights[over_limit]) * max_position
+            # Redistribute excess weight to other assets
+            excess = 1.0 - np.sum(weights[over_limit])
+            remaining_mask = ~over_limit
+            if np.any(remaining_mask):
+                remaining_sum = np.sum(np.abs(weights[remaining_mask]))
+                if remaining_sum > 0:
+                    weights[remaining_mask] = weights[remaining_mask] * (excess / remaining_sum)
         
         # Apply leverage constraint
         if np.sum(np.abs(weights)) > self.max_leverage:
@@ -250,7 +268,7 @@ class PortfolioEnv(gym.Env):
         turnover: float
     ) -> float:
         """
-        Calculate reward based on selected reward type.
+        Calculate reward based on selected reward type with enhanced risk penalties.
         
         Args:
             portfolio_return: Net portfolio return for this step.
@@ -289,6 +307,35 @@ class PortfolioEnv(gym.Env):
         # Apply turnover penalty if specified
         if self.turnover_penalty > 0:
             reward -= self.turnover_penalty * turnover
+        
+        # Enhanced: Add progressive penalty for drawdowns (balanced approach)
+        if len(self.portfolio_values) >= 2:
+            current_value = self.portfolio_values[-1]
+            peak_value = max(self.portfolio_values)
+            if peak_value > 0:
+                current_drawdown = (peak_value - current_value) / peak_value
+                # Moderate penalty for drawdowns > 5% (target threshold)
+                if current_drawdown > 0.05:
+                    drawdown_penalty = 5.0 * (current_drawdown - 0.05)
+                    reward -= drawdown_penalty
+                # Stronger penalty for drawdowns > 10%
+                if current_drawdown > 0.10:
+                    reward -= 10.0 * (current_drawdown - 0.10)
+        
+        # Moderate penalty for negative returns (downside protection)
+        if portfolio_return < 0:
+            reward -= 0.5 * abs(portfolio_return)
+        
+        # Small bonus for positive returns (encourage gains)
+        if portfolio_return > 0:
+            reward += 0.2 * portfolio_return
+        
+        # Bonus for consistent positive performance
+        if len(self.portfolio_returns) >= 10:
+            recent_10 = self.portfolio_returns[-10:]
+            positive_ratio = sum(1 for r in recent_10 if r > 0) / 10
+            if positive_ratio >= 0.7:
+                reward += 0.3 * positive_ratio
         
         return reward
     

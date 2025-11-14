@@ -1,0 +1,123 @@
+# Enhanced Configuration for Low Drawdown, High Sharpe Portfolio Optimization
+# Target: Max Drawdown < 5%, Sharpe Ratio > 1.0
+
+# Data Configuration
+data:
+  assets:
+    - AAPL
+    - NVDA
+    - TSLA
+    - MSFT
+    - GOOGL
+    - AMZN
+    - SPY
+    - GLD
+    - BTC-USD
+    - ETH-USD
+  start_date: "2015-01-01"
+  end_date: "2024-12-31"
+  train_ratio: 0.7
+  frequency: "1d"
+  
+# Feature Engineering - Enhanced with more indicators
+features:
+  lookback_window: 30  # Increased for better context
+  use_prices: true
+  use_returns: true
+  use_log_returns: true
+  
+  # Technical Indicators - More granular
+  sma_periods: [5, 10, 20, 50]
+  ema_periods: [5, 10, 20, 50]
+  ema_alpha: 0.1
+  momentum_periods: [5, 10, 20, 50]
+  
+  # Normalization
+  normalize_prices: true
+  normalize_method: "zscore"
+  rolling_normalize: true
+  rolling_window: 60
+
+# Environment Configuration - Conservative for Low Risk
+environment:
+  initial_balance: 100000.0
+  transaction_cost: 0.0005  # Reduced to 0.05% to encourage rebalancing
+  allow_short: false  # Long-only
+  max_leverage: 1.0  # No leverage
+  slippage: 0.0
+  
+  # Reward Configuration - Risk-adjusted with heavy DD penalty
+  reward_type: "risk_adjusted"
+  risk_penalty_lambda: 2.0  # Increased from 0.5 to 2.0 for more risk aversion
+  volatility_window: 30  # Longer window for stable volatility estimates
+  risk_free_rate: 0.02
+  
+  # Turnover Penalty - Encourage stability
+  turnover_penalty: 0.001  # Small penalty to reduce excessive trading
+  
+# Agent Configuration - More conservative PPO
+agents:
+  ppo:
+    learning_rate: 0.0001  # Lower LR for more stable learning
+    n_steps: 4096  # Larger buffer for better policy updates
+    batch_size: 128  # Larger batches for stability
+    n_epochs: 20  # More epochs per update
+    gamma: 0.995  # Higher discount for long-term thinking
+    gae_lambda: 0.98  # Higher GAE for better advantage estimation
+    clip_range: 0.15  # Tighter clipping for conservative updates
+    ent_coef: 0.005  # Lower entropy for less exploration
+    vf_coef: 0.5
+    max_grad_norm: 0.3  # Tighter gradient clipping
+    network_arch: [256, 256, 128]  # Deeper network for complex patterns
+
+# Training Configuration - Longer training
+training:
+  total_timesteps: 200000  # 4x longer training
+  eval_freq: 10000
+  n_eval_episodes: 10
+  save_freq: 20000
+  log_interval: 10
+  verbose: 1
+  seed: 42
+
+# Evaluation Configuration
+evaluation:
+  n_eval_episodes: 1
+  deterministic: true
+  render: false
+  
+# Benchmark Configuration
+benchmarks:
+  equal_weight: true
+  mean_variance: true
+  momentum: true
+  
+  mv_lookback: 60
+  mv_target_return: null
+  mv_allow_short: false
+  
+  momentum_lookback: 20
+  momentum_top_k: 3
+
+# Metrics Configuration
+metrics:
+  annualized_factor: 252
+  risk_free_rate: 0.02
+  confidence_level: 0.95
+
+# Visualization Configuration
+visualization:
+  figsize: [12, 6]
+  dpi: 100
+  style: "seaborn-v0_8-darkgrid"
+  save_format: "png"
+  
+# Paths
+paths:
+  data_dir: "data"
+  models_dir: "models"
+  results_dir: "results"
+  logs_dir: "logs"
+
+# Random Seed
+seed: 42
