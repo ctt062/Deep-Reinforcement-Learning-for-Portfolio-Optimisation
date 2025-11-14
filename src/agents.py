@@ -403,6 +403,18 @@ def create_agent(
     
     # Merge config with kwargs
     params = {**config, **kwargs}
+
+    # The config may include keys intended for high-level descriptions (e.g. 'policy')
+    # which the lower-level create_*_agent helpers already set explicitly. Remove
+    # such keys to avoid passing duplicate values to stable-baselines3 constructors
+    # (which leads to TypeError: multiple values for keyword argument 'policy').
+    params.pop('policy', None)
+
+    # Map configuration key names to the parameter names expected by helper
+    # functions. For example, the YAML uses 'network_arch' while the helper
+    # expects 'net_arch'. Normalize this to avoid unexpected keyword args.
+    if 'network_arch' in params:
+        params['net_arch'] = params.pop('network_arch')
     
     agent_type = agent_type.lower()
     
