@@ -80,6 +80,14 @@ evaluation:
   deterministic: true
   render: false
 
+benchmarks:
+  equal_weight: true
+  mean_variance: true
+  momentum: true
+  mv_lookback: 60
+  mv_target_return: null
+  mv_allow_short: false
+
 metrics:
   annualized_factor: 252
   risk_free_rate: 0.02
