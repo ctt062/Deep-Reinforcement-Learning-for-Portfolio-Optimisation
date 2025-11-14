@@ -1,0 +1,115 @@
+# Enhanced Configuration with Defensive Assets
+# Target: <5% max drawdown, Sharpe >1.0
+# Strategy: Add bonds for stability, longer training period, no position limits
+
+data:
+  data_dir: 'data'
+  assets:
+    # Original growth assets
+    - AAPL
+    - NVDA
+    - TSLA
+    - MSFT
+    - GOOGL
+    - AMZN
+    - SPY
+    # Defensive assets
+    - GLD      # Gold
+    - TLT      # 20+ Year Treasury Bonds
+    - SHY      # 1-3 Year Treasury Bonds
+    - IEF      # 7-10 Year Treasury Bonds
+    - AGG      # Aggregate Bond ETF
+    # Alternative assets
+    - BTC-USD
+    - ETH-USD
+  start_date: "2010-01-01"  # Longer training period (15 years)
+  end_date: "2024-12-31"
+  train_ratio: 0.7
+  frequency: "1d"
+
+features:
+  lookback_window: 40  # Longer lookback for better patterns
+  use_prices: true
+  use_returns: true
+  use_log_returns: true
+  
+  sma_periods: [5, 10, 20, 50]
+  ema_periods: [5, 10, 20, 50]
+  ema_alpha: 0.1
+  momentum_periods: [5, 10, 20, 50]
+  
+  normalize_prices: true
+  normalize_method: "zscore"
+  rolling_normalize: true
+  rolling_window: 60
+
+environment:
+  initial_balance: 100000.0
+  transaction_cost: 0.0005  # Slightly higher for realism
+  allow_short: false
+  max_leverage: 1.0
+  slippage: 0.0
+  
+  reward_type: "risk_adjusted"
+  risk_penalty_lambda: 3.0  # Higher penalty for risk
+  volatility_window: 30
+  risk_free_rate: 0.02
+  
+  turnover_penalty: 0.0
+
+agents:
+  ppo:
+    policy: "MlpPolicy"
+    learning_rate: 0.00003  # Even lower for stability
+    n_steps: 4096
+    batch_size: 256  # Larger batch for more assets
+    n_epochs: 10
+    gamma: 0.99
+    gae_lambda: 0.95
+    clip_range: 0.2
+    ent_coef: 0.02  # More exploration for more assets
+    vf_coef: 0.5
+    max_grad_norm: 0.5
+    network_arch: [512, 512, 256, 128]  # Deeper network for complex patterns
+
+training:
+  total_timesteps: 500000  # Longer training
+  eval_freq: 50000
+  n_eval_episodes: 5
+  save_freq: 50000
+  log_interval: 10
+  verbose: 1
+  tensorboard_log: "logs"
+  device: "cpu"
+
+evaluation:
+  n_eval_episodes: 1
+  deterministic: true
+  render: false
+
+benchmarks:
+  equal_weight: true
+  mean_variance: true
+  momentum: true
+  mv_lookback: 60
+  mv_target_return: null
+  mv_allow_short: false
+
+metrics:
+  annualized_factor: 252
+  risk_free_rate: 0.02
+  confidence_level: 0.95
+
+visualization:
+  figsize: [12, 6]
+  dpi: 100
+  style: "seaborn-v0_8-darkgrid"
+  save_format: "png"
+
+paths:
+  data_dir: "data"
+  models_dir: "models"
+  results_dir: "results"
+  logs_dir: "logs"
+
+seed: 42

@@ -215,30 +215,12 @@ class PortfolioEnv(gym.Env):
         if not self.allow_short:
             weights = np.maximum(weights, 0)
         
-        # Apply maximum position size constraint (15% per asset)
-        max_position = 0.15
-        weights = np.clip(weights, 0 if not self.allow_short else -max_position, max_position)
-        
         # Normalize to sum to 1
         weight_sum = np.sum(np.abs(weights))
         if weight_sum > 0:
             weights = weights / weight_sum
         else:
             weights = np.ones(self.n_assets) / self.n_assets
-        
-        # Re-apply position limits after normalization (iterative projection)
-        for _ in range(3):  # Iterate a few times to satisfy both constraints
-            over_limit = np.abs(weights) > max_position
-            if not np.any(over_limit):
-                break
-            weights[over_limit] = np.sign(weights[over_limit]) * max_position
-            # Redistribute excess weight to other assets
-            excess = 1.0 - np.sum(weights[over_limit])
-            remaining_mask = ~over_limit
-            if np.any(remaining_mask):
-                remaining_sum = np.sum(np.abs(weights[remaining_mask]))
-                if remaining_sum > 0:
-                    weights[remaining_mask] = weights[remaining_mask] * (excess / remaining_sum)
         
         # Apply leverage constraint
         if np.sum(np.abs(weights)) > self.max_leverage:
