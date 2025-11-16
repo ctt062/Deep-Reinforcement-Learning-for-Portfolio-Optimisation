@@ -111,12 +111,13 @@ class PortfolioEnv(gym.Env):
             )
         
         # Define observation space
-        # State: [price_history, features, previous_weights]
+        # State: [price_history, features, previous_weights, portfolio_metrics]
         n_price_features = self.n_assets * lookback_window
         n_technical_features = len(features.columns)
         n_weight_features = self.n_assets
+        n_portfolio_metrics = 3  # recent_return, drawdown, volatility
         
-        self.observation_dim = n_price_features + n_technical_features + n_weight_features
+        self.observation_dim = n_price_features + n_technical_features + n_weight_features + n_portfolio_metrics
         
         self.observation_space = spaces.Box(
             low=-np.inf,
@@ -162,17 +163,45 @@ class PortfolioEnv(gym.Env):
             data_idx - self.lookback_window:data_idx
         ].values.flatten()
         
+        # Normalize price history (clip extreme values)
+        price_window = np.clip(price_window, -0.5, 0.5)
+        
         # 2. Current technical features
         current_features = self.features.iloc[data_idx].values
         
+        # Normalize features (handle inf/nan)
+        current_features = np.nan_to_num(current_features, nan=0.0, posinf=3.0, neginf=-3.0)
+        current_features = np.clip(current_features, -5.0, 5.0)
+        
         # 3. Previous weights
         prev_weights = self.weights.copy()
+        
+        # 4. Add portfolio performance metrics
+        if len(self.portfolio_values) > 1:
+            # Recent return
+            recent_return = (self.portfolio_values[-1] - self.portfolio_values[-2]) / self.portfolio_values[-2]
+            recent_return = np.clip(recent_return, -1.0, 1.0)
+            
+            # Drawdown from peak
+            peak_value = max(self.portfolio_values)
+            current_drawdown = (peak_value - self.portfolio_values[-1]) / peak_value if peak_value > 0 else 0
+            
+            # Recent volatility
+            if len(self.portfolio_returns) >= 10:
+                recent_vol = np.std(self.portfolio_returns[-10:])
+            else:
+                recent_vol = 0.0
+            
+            portfolio_metrics = np.array([recent_return, current_drawdown, recent_vol], dtype=np.float32)
+        else:
+            portfolio_metrics = np.zeros(3, dtype=np.float32)
         
         # Concatenate all components
         state = np.concatenate([
             price_window,
             current_features,
-            prev_weights
+            prev_weights,
+            portfolio_metrics
         ]).astype(np.float32)
         
         return state
@@ -180,12 +209,13 @@ class PortfolioEnv(gym.Env):
     def _softmax_weights(self, logits: np.ndarray) -> np.ndarray:
         """
         Convert raw action logits to valid portfolio weights using softmax.
+        Implements dynamic risk management based on current drawdown.
         
         Args:
             logits: Raw output from neural network.
             
         Returns:
-            Valid portfolio weights summing to 1.
+            Valid portfolio weights with dynamic cash allocation based on risk.
             
         Formula:
             w_i = exp(z_i) / sum_j exp(z_j)
@@ -199,6 +229,45 @@ class PortfolioEnv(gym.Env):
         if not self.allow_short:
             weights = np.abs(weights)
             weights = weights / np.sum(weights)
+        
+        # CRITICAL: Dynamic risk management based on drawdown
+        # Automatically reduce exposure when experiencing drawdown
+        if len(self.portfolio_values) >= 2:
+            current_value = self.portfolio_values[-1]
+            peak_value = max(self.portfolio_values)
+            if peak_value > 0:
+                current_drawdown = (peak_value - current_value) / peak_value
+                
+                # AGGRESSIVE exposure reduction based on drawdown (target <10%)
+                if current_drawdown > 0.02:  # 2% drawdown
+                    risk_reduction = 0.9  # Reduce to 90% exposure
+                elif current_drawdown > 0.04:  # 4% drawdown
+                    risk_reduction = 0.7  # Reduce to 70% exposure
+                elif current_drawdown > 0.06:  # 6% drawdown
+                    risk_reduction = 0.5  # Reduce to 50% exposure
+                elif current_drawdown > 0.08:  # 8% drawdown
+                    risk_reduction = 0.3  # Reduce to 30% exposure
+                elif current_drawdown > 0.10:  # 10% drawdown (defensive mode)
+                    risk_reduction = 0.1  # Reduce to 10% exposure
+                else:
+                    risk_reduction = 1.0  # Full exposure
+                
+                # Scale down weights, remainder goes to cash
+                weights = weights * risk_reduction
+        
+        # Also check recent volatility for aggressive risk management
+        if len(self.portfolio_returns) >= 20:
+            recent_vol = np.std(self.portfolio_returns[-20:])
+            # If volatility is high, aggressively reduce exposure
+            if recent_vol > 0.012:  # Moderate daily volatility
+                vol_reduction = 0.8
+                weights = weights * vol_reduction
+            elif recent_vol > 0.015:  # High daily volatility
+                vol_reduction = 0.6
+                weights = weights * vol_reduction
+            elif recent_vol > 0.020:  # Extreme volatility
+                vol_reduction = 0.3
+                weights = weights * vol_reduction
         
         return weights
     
@@ -250,74 +319,140 @@ class PortfolioEnv(gym.Env):
         turnover: float
     ) -> float:
         """
-        Calculate reward based on selected reward type with enhanced risk penalties.
+        Calculate reward with strong emphasis on risk control and drawdown minimization.
         
         Args:
             portfolio_return: Net portfolio return for this step.
             turnover: Portfolio turnover.
             
         Returns:
-            Reward value.
+            Reward value optimized for high Sharpe ratio and low drawdown.
         """
-        if self.reward_type == "log_return":
-            # Simple log return
-            reward = np.log(1 + portfolio_return + 1e-8)
-            
-        elif self.reward_type == "sharpe":
-            # Sharpe-like reward: (return - rf) / volatility
-            data_idx = self.lookback_window + self.current_step
-            
-            if len(self.portfolio_returns) >= self.volatility_window:
-                recent_returns = self.portfolio_returns[-self.volatility_window:]
-                volatility = np.std(recent_returns) + 1e-8
-                reward = (portfolio_return - self.risk_free_rate) / volatility
-            else:
-                reward = portfolio_return - self.risk_free_rate
-                
-        elif self.reward_type == "risk_adjusted":
-            # Risk-adjusted return: R_t - λ * σ²_t
-            if len(self.portfolio_returns) >= self.volatility_window:
-                recent_returns = self.portfolio_returns[-self.volatility_window:]
-                variance = np.var(recent_returns)
-                reward = portfolio_return - self.risk_penalty_lambda * variance
-            else:
-                reward = portfolio_return
-        else:
-            # Default to simple return
-            reward = portfolio_return
+        # Start with base return
+        reward = 0.0
         
-        # Apply turnover penalty if specified
-        if self.turnover_penalty > 0:
-            reward -= self.turnover_penalty * turnover
-        
-        # Enhanced: Add progressive penalty for drawdowns (balanced approach)
+        # Calculate current drawdown
+        current_drawdown = 0.0
         if len(self.portfolio_values) >= 2:
             current_value = self.portfolio_values[-1]
             peak_value = max(self.portfolio_values)
             if peak_value > 0:
                 current_drawdown = (peak_value - current_value) / peak_value
-                # Moderate penalty for drawdowns > 5% (target threshold)
-                if current_drawdown > 0.05:
-                    drawdown_penalty = 5.0 * (current_drawdown - 0.05)
-                    reward -= drawdown_penalty
-                # Stronger penalty for drawdowns > 10%
-                if current_drawdown > 0.10:
-                    reward -= 10.0 * (current_drawdown - 0.10)
         
-        # Moderate penalty for negative returns (downside protection)
-        if portfolio_return < 0:
-            reward -= 0.5 * abs(portfolio_return)
+        # Calculate recent volatility
+        recent_volatility = 0.0
+        if len(self.portfolio_returns) >= self.volatility_window:
+            recent_returns = self.portfolio_returns[-self.volatility_window:]
+            recent_volatility = np.std(recent_returns)
         
-        # Small bonus for positive returns (encourage gains)
+        # === CORE REWARD COMPONENTS ===
+        
+        # 1. Base return reward (scaled appropriately)
+        reward += portfolio_return * 1000.0
+        
+        # 2. Asymmetric return reward (upside/downside asymmetry)
         if portfolio_return > 0:
-            reward += 0.2 * portfolio_return
+            # Reward positive returns
+            reward += portfolio_return * 500.0
+            # Extra bonus for returns above risk-free rate
+            excess_return = portfolio_return - (self.risk_free_rate / 252)
+            if excess_return > 0:
+                reward += excess_return * 300.0
+        else:
+            # Penalty for negative returns (moderate downside protection)
+            reward += portfolio_return * 1500.0  # 1.5x penalty for losses
         
-        # Bonus for consistent positive performance
-        if len(self.portfolio_returns) >= 10:
-            recent_10 = self.portfolio_returns[-10:]
-            positive_ratio = sum(1 for r in recent_10 if r > 0) / 10
-            if positive_ratio >= 0.7:
-                reward += 0.3 * positive_ratio
+        # 3. CRITICAL: Extremely aggressive drawdown penalties (target < 10%)
+        if current_drawdown > 0.01:  # Start penalizing early at 1%
+            reward -= 100.0 * (current_drawdown - 0.01)
+        if current_drawdown > 0.03:  # Moderate penalty at 3%
+            reward -= 500.0 * (current_drawdown - 0.03)
+        if current_drawdown > 0.05:  # Strong penalty at 5%
+            reward -= 1000.0 * (current_drawdown - 0.05)
+        if current_drawdown > 0.08:  # Severe penalty at 8%
+            reward -= 3000.0 * (current_drawdown - 0.08)
+        if current_drawdown > 0.10:  # Catastrophic penalty at 10%
+            reward -= 10000.0 * (current_drawdown - 0.10)
+        
+        # 4. Reward for staying near peak (low drawdown bonus)
+        if current_drawdown < 0.02:
+            reward += 100.0 * (0.02 - current_drawdown)  # Scaled bonus
+        
+        # Additional bonus for maintaining very low drawdown over time
+        if len(self.portfolio_values) >= 50:
+            # Calculate average drawdown over last 50 periods
+            recent_values = self.portfolio_values[-50:]
+            avg_drawdown = 0
+            for i, val in enumerate(recent_values):
+                peak = max(recent_values[:i+1]) if i > 0 else val
+                if peak > 0:
+                    dd = (peak - val) / peak
+                    avg_drawdown += dd
+            avg_drawdown /= 50
+            
+            # Strong reward for maintaining low average drawdown
+            if avg_drawdown < 0.05:
+                reward += 500.0 * (0.05 - avg_drawdown)
+            if avg_drawdown < 0.03:
+                reward += 1000.0 * (0.03 - avg_drawdown)
+        
+        # 5. Volatility control (encourage stability, but not too strict)
+        if recent_volatility > 0:
+            # Target annual volatility < 15% (daily vol < 0.01)
+            if recent_volatility > 0.010:
+                reward -= 200.0 * (recent_volatility - 0.010)
+        
+        # 6. Sharpe-based reward component (STRONG weight on this)
+        if len(self.portfolio_returns) >= self.volatility_window:
+            recent_returns = self.portfolio_returns[-self.volatility_window:]
+            mean_return = np.mean(recent_returns)
+            volatility = np.std(recent_returns) + 1e-8
+            sharpe = (mean_return - self.risk_free_rate / 252) / volatility
+            
+            # Strong rewards for high Sharpe ratios
+            if sharpe > 0.04:  # Reasonable Sharpe
+                reward += 500.0 * sharpe
+            if sharpe > 0.06:  # Good Sharpe (>1 annualized)
+                reward += 1000.0 * (sharpe - 0.06)
+            if sharpe > 0.08:  # Excellent Sharpe
+                reward += 2000.0 * (sharpe - 0.08)
+        
+        # 7. Consistency bonus (reward stable performance)
+        if len(self.portfolio_returns) >= 20:
+            recent_20 = self.portfolio_returns[-20:]
+            positive_ratio = sum(1 for r in recent_20 if r > 0) / 20
+            # Reward high win rate
+            if positive_ratio >= 0.55:
+                reward += 300.0 * positive_ratio
+            if positive_ratio >= 0.65:
+                reward += 500.0 * (positive_ratio - 0.65)
+        
+        # 8. Turnover penalty (reduce transaction costs but not too strict)
+        if self.turnover_penalty > 0:
+            reward -= self.turnover_penalty * turnover
+        
+        # Moderate penalty for excessive turnover
+        if turnover > 0.6:
+            reward -= 100.0 * (turnover - 0.6)
+        
+        # 9. Value growth bonus (encourage compounding returns)
+        if len(self.portfolio_values) >= 2:
+            value_growth = (self.portfolio_values[-1] - self.initial_balance) / self.initial_balance
+            if value_growth > 0.05:  # 5% growth
+                reward += 200.0 * value_growth
+            if value_growth > 0.15:  # 15% growth
+                reward += 500.0 * (value_growth - 0.15)
+        
+        # 10. Risk-adjusted return over longer horizon (rolling Sharpe)
+        if len(self.portfolio_returns) >= 50:
+            returns_50 = self.portfolio_returns[-50:]
+            cumulative_return = np.prod([1 + r for r in returns_50]) - 1
+            volatility_50 = np.std(returns_50) + 1e-8
+            risk_adj_return = cumulative_return / (volatility_50 * np.sqrt(50))
+            if risk_adj_return > 0:
+                reward += 300.0 * risk_adj_return
+            if risk_adj_return > 0.5:  # Excellent risk-adjusted performance
+                reward += 500.0 * (risk_adj_return - 0.5)
         
         return reward
     

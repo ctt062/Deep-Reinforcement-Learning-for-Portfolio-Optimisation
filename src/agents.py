@@ -232,17 +232,17 @@ def create_dqn_agent(
 
 def create_ppo_agent(
     env: gym.Env,
-    learning_rate: float = 0.0003,
-    n_steps: int = 2048,
-    batch_size: int = 64,
-    n_epochs: int = 10,
-    gamma: float = 0.99,
-    gae_lambda: float = 0.95,
-    clip_range: float = 0.2,
-    ent_coef: float = 0.01,
+    learning_rate: float = 1e-4,
+    n_steps: int = 4096,
+    batch_size: int = 128,
+    n_epochs: int = 20,
+    gamma: float = 0.995,
+    gae_lambda: float = 0.98,
+    clip_range: float = 0.15,
+    ent_coef: float = 0.0001,
     vf_coef: float = 0.5,
     max_grad_norm: float = 0.5,
-    net_arch: List[int] = [128, 128],
+    net_arch: List[int] = [512, 512, 256],
     verbose: int = 1,
     device: str = "auto",
     **kwargs
@@ -276,11 +276,19 @@ def create_ppo_agent(
         PPO agent.
     """
     policy_kwargs = {
-        "net_arch": dict(
-            pi=net_arch,  # Policy network
-            vf=net_arch,  # Value network
+        "features_extractor_class": PortfolioFeatureExtractor,
+        "features_extractor_kwargs": dict(
+            features_dim=256,
+            net_arch=[512, 512, 256],
+            activation_fn=nn.Tanh,
+            normalize=True,
         ),
-        "activation_fn": nn.ReLU,
+        "net_arch": dict(
+            pi=net_arch,
+            vf=net_arch,
+        ),
+        "activation_fn": nn.Tanh,
+        "normalize_images": False,
     }
     
     agent = PPO(

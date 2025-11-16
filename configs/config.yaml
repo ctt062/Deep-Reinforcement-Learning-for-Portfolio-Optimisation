@@ -74,17 +74,17 @@ agents:
   # Proximal Policy Optimization (PPO)
   ppo:
     policy: "MlpPolicy"
-    learning_rate: 0.0003
-    n_steps: 2048
-    batch_size: 64
-    n_epochs: 10
-    gamma: 0.99
-    gae_lambda: 0.95
-    clip_range: 0.2
-    ent_coef: 0.01
+    learning_rate: 0.0001
+    n_steps: 4096
+    batch_size: 128
+    n_epochs: 20
+    gamma: 0.995
+    gae_lambda: 0.98
+    clip_range: 0.15
+    ent_coef: 0.0001
     vf_coef: 0.5
     max_grad_norm: 0.5
-    network_arch: [128, 128]
+    network_arch: [512, 512, 256]
     
   # Deep Deterministic Policy Gradient (DDPG)
   ddpg:
@@ -103,7 +103,7 @@ agents:
 
 # Training Configuration
 training:
-  total_timesteps: 100000
+  total_timesteps: 300000
   eval_freq: 5000
   n_eval_episodes: 10
   save_freq: 10000
