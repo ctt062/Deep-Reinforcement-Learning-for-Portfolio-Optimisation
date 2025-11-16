@@ -32,6 +32,7 @@ from src.visualization import (
     plot_metrics_comparison,
     plot_turnover_analysis
 )
+from src.discrete_wrapper import DiscretePortfolioWrapper
 
 from stable_baselines3 import PPO, DDPG, DQN
 
@@ -222,6 +223,12 @@ def main():
         
         # Create test environment
         env = create_environment(config, test_data)
+        
+        # Wrap with discrete action space for DQN
+        if args.agent == 'dqn':
+            print("Wrapping environment with discrete action space for DQN...")
+            n_discrete_actions = config['agents'].get('dqn', {}).get('n_discrete_actions', 100)
+            env = DiscretePortfolioWrapper(env, n_discrete_actions=n_discrete_actions, strategy="mixed")
         
         # Load trained agent
         print(f"Loading model from {args.model_path}...")

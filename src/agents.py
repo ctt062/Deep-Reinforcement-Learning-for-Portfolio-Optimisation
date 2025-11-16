@@ -158,16 +158,16 @@ class TrainingCallback(BaseCallback):
 def create_dqn_agent(
     env: gym.Env,
     learning_rate: float = 0.0001,
-    buffer_size: int = 100000,
-    learning_starts: int = 1000,
-    batch_size: int = 32,
-    gamma: float = 0.99,
-    tau: float = 1.0,
-    target_update_interval: int = 1000,
-    exploration_fraction: float = 0.1,
+    buffer_size: int = 200000,
+    learning_starts: int = 5000,
+    batch_size: int = 128,
+    gamma: float = 0.995,
+    tau: float = 0.005,
+    target_update_interval: int = 2000,
+    exploration_fraction: float = 0.2,
     exploration_initial_eps: float = 1.0,
-    exploration_final_eps: float = 0.05,
-    net_arch: List[int] = [128, 128],
+    exploration_final_eps: float = 0.01,
+    net_arch: List[int] = [512, 512, 256],
     verbose: int = 1,
     device: str = "auto",
     **kwargs
@@ -205,7 +205,15 @@ def create_dqn_agent(
     )
     
     policy_kwargs = {
+        "features_extractor_class": PortfolioFeatureExtractor,
+        "features_extractor_kwargs": dict(
+            features_dim=256,
+            net_arch=[512, 512, 256],
+            activation_fn=nn.Tanh,
+            normalize=True,
+        ),
         "net_arch": net_arch,
+        "activation_fn": nn.Tanh,
     }
     
     agent = DQN(
@@ -315,13 +323,13 @@ def create_ppo_agent(
 
 def create_ddpg_agent(
     env: gym.Env,
-    learning_rate: float = 0.001,
+    learning_rate: float = 0.0001,
     buffer_size: int = 1000000,
-    learning_starts: int = 100,
-    batch_size: int = 100,
-    tau: float = 0.005,
-    gamma: float = 0.99,
-    action_noise_std: float = 0.1,
+    learning_starts: int = 5000,
+    batch_size: int = 128,
+    tau: float = 0.001,
+    gamma: float = 0.995,
+    action_noise_std: float = 0.05,
     net_arch: Dict[str, List[int]] = None,
     verbose: int = 1,
     device: str = "auto",
@@ -354,11 +362,18 @@ def create_ddpg_agent(
         DDPG agent.
     """
     if net_arch is None:
-        net_arch = dict(pi=[128, 128], qf=[128, 128])
+        net_arch = dict(pi=[512, 512, 256], qf=[512, 512, 256])
     
     policy_kwargs = {
+        "features_extractor_class": PortfolioFeatureExtractor,
+        "features_extractor_kwargs": dict(
+            features_dim=256,
+            net_arch=[512, 512, 256],
+            activation_fn=nn.Tanh,
+            normalize=True,
+        ),
         "net_arch": net_arch,
-        "activation_fn": nn.ReLU,
+        "activation_fn": nn.Tanh,
     }
     
     # Create action noise
@@ -368,6 +383,9 @@ def create_ddpg_agent(
         mean=np.zeros(n_actions),
         sigma=action_noise_std * np.ones(n_actions)
     )
+    
+    # Remove action_noise from kwargs if present to avoid duplicate argument error
+    kwargs.pop('action_noise', None)
     
     agent = DDPG(
         policy="MlpPolicy",
@@ -417,6 +435,9 @@ def create_agent(
     # such keys to avoid passing duplicate values to stable-baselines3 constructors
     # (which leads to TypeError: multiple values for keyword argument 'policy').
     params.pop('policy', None)
+    
+    # Remove wrapper-specific parameters that are not agent parameters
+    params.pop('n_discrete_actions', None)
 
     # Map configuration key names to the parameter names expected by helper
     # functions. For example, the YAML uses 'network_arch' while the helper

@@ -60,16 +60,17 @@ agents:
   dqn:
     policy: "MlpPolicy"
     learning_rate: 0.0001
-    buffer_size: 100000
-    learning_starts: 1000
-    batch_size: 32
-    tau: 1.0
-    gamma: 0.99
-    exploration_fraction: 0.1
+    buffer_size: 200000
+    learning_starts: 5000
+    batch_size: 128
+    tau: 0.005
+    gamma: 0.995
+    exploration_fraction: 0.2
     exploration_initial_eps: 1.0
-    exploration_final_eps: 0.05
-    target_update_interval: 1000
-    network_arch: [128, 128]
+    exploration_final_eps: 0.01
+    target_update_interval: 2000
+    network_arch: [512, 512, 256]
+    n_discrete_actions: 100  # Number of discrete portfolio actions
     
   # Proximal Policy Optimization (PPO)
   ppo:
@@ -89,17 +90,16 @@ agents:
   # Deep Deterministic Policy Gradient (DDPG)
   ddpg:
     policy: "MlpPolicy"
-    learning_rate: 0.001
+    learning_rate: 0.0001
     buffer_size: 1000000
-    learning_starts: 100
-    batch_size: 100
+    learning_starts: 10000
+    batch_size: 256
     tau: 0.005
-    gamma: 0.99
-    action_noise: "normal"  # normal or ornstein_uhlenbeck
-    noise_std: 0.1
+    gamma: 0.995
+    action_noise_std: 0.1
     network_arch:
-      pi: [128, 128]
-      qf: [128, 128]
+      pi: [512, 512, 256]
+      qf: [512, 512, 256]
 
 # Training Configuration
 training:

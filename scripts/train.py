@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from src.data_loader import DataLoader
 from src.portfolio_env import PortfolioEnv
 from src.agents import create_agent, train_agent, TrainingCallback
+from src.discrete_wrapper import DiscretePortfolioWrapper
 
 
 def set_random_seed(seed: int):
@@ -174,9 +175,16 @@ def main():
     # Create environment
     print("\nCreating environment...")
     env = create_environment(config, train_data, args.agent)
-    print(f"Environment created: {env.n_assets} assets, {env.max_steps} max steps")
+    
+    # Wrap with discrete action space for DQN
+    if args.agent == 'dqn':
+        print("\nWrapping environment with discrete action space for DQN...")
+        n_discrete_actions = config['agents'].get('dqn', {}).get('n_discrete_actions', 100)
+        env = DiscretePortfolioWrapper(env, n_discrete_actions=n_discrete_actions, strategy="mixed")
+    
+    print(f"Environment created: {env.n_assets if hasattr(env, 'n_assets') else 'N/A'} assets")
     print(f"Observation space: {env.observation_space.shape}")
-    print(f"Action space: {env.action_space.shape}")
+    print(f"Action space: {env.action_space}")
     
     # Create agent
     print(f"\nCreating {args.agent.upper()} agent...")
