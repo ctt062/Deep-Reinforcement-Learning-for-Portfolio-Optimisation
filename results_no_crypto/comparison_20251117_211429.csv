@@ -1,0 +1,9 @@
+,Total Return,Annualized Return,Annualized Volatility,Sharpe Ratio,Max Drawdown
+"PPO Baseline
+(With Crypto)",5.03,28.69,20.63,1.2936,40.47
+"DDPG Baseline
+(With Crypto)",6.93,33.73,22.58,1.4051,29.74
+"PPO + Options
+(With Crypto)",4.96,28.48,20.6,1.2852,39.71
+"DDPG + Options
+(No Crypto)",223.12528017687026,27.262194985650765,23.193613468198706,1.0891875481277784,12.70534177829416
