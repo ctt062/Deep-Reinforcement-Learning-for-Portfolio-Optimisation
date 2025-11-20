@@ -92,6 +92,46 @@ agents:
     - 512
     - 256
     - 128
+  ddpg:
+    policy: MlpPolicy
+    learning_rate: 2.0e-05
+    batch_size: 512
+    buffer_size: 500000
+    learning_starts: 20000
+    gamma: 0.99
+    tau: 0.001
+    action_noise: 0.05
+    train_freq: 1
+    gradient_steps: 1
+    network_arch:
+      pi:
+      - 1024
+      - 512
+      - 256
+      - 128
+      qf:
+      - 1024
+      - 512
+      - 256
+      - 128
+  dqn:
+    policy: MlpPolicy
+    learning_rate: 2.0e-05
+    batch_size: 256
+    buffer_size: 500000
+    learning_starts: 10000
+    gamma: 0.99
+    target_update_interval: 5000
+    train_freq: 4
+    gradient_steps: 1
+    exploration_fraction: 0.3
+    exploration_initial_eps: 1.0
+    exploration_final_eps: 0.01
+    network_arch:
+    - 1024
+    - 512
+    - 256
+    - 128
 training:
   total_timesteps: 750000
   eval_freq: 75000
