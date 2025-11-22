@@ -261,7 +261,7 @@ def train_and_evaluate_agent(agent_name, config, train_data, test_data, output_d
     print(f"  Return > 15%:    {'✓' if clean_metrics['annualized_return'] > 0.15 else '✗'}")
     
     # Save results to JSON
-    results_dir = Path('results_final_benchmark')
+    results_dir = Path('results')
     results_dir.mkdir(exist_ok=True)
     
     # Save metrics
@@ -353,7 +353,7 @@ def main():
     print(f"Test samples: {len(test_data['features'])}")
     
     # Create output directory
-    output_dir = 'models_final_benchmark'
+    output_dir = 'models'
     os.makedirs(output_dir, exist_ok=True)
     
     # Train and evaluate each agent

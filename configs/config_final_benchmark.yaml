@@ -149,8 +149,8 @@ visualization:
 
 paths:
   data_dir: data
-  models_dir: models_final_benchmark
-  results_dir: results_final_benchmark
+  models_dir: models
+  results_dir: results
   logs_dir: logs
 
 seed: 42

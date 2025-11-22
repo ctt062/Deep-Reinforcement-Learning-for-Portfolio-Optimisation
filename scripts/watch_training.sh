@@ -16,8 +16,8 @@ while true; do
         echo "⚠️  Training process not found"
         
         # Check if completed
-        if [ -f "results_final_benchmark/ddpg_options_final_metrics.json" ] && \
-           [ -f "results_final_benchmark/ppo_options_final_metrics.json" ]; then
+        if [ -f "results/ddpg_options_final_metrics.json" ] && \
+           [ -f "results/ppo_options_final_metrics.json" ]; then
             echo "✅ Training COMPLETED!"
             break
         else
@@ -116,16 +116,16 @@ while true; do
     echo "============================================================"
     echo "  Files Status:"
     echo "============================================================"
-    if [ -d "models_final_benchmark" ]; then
-        DDPG_MODEL=$(ls models_final_benchmark/ddpg*.zip 2>/dev/null | wc -l | tr -d ' ')
-        PPO_MODEL=$(ls models_final_benchmark/ppo*.zip 2>/dev/null | wc -l | tr -d ' ')
+    if [ -d "models" ]; then
+        DDPG_MODEL=$(ls models/ddpg*.zip 2>/dev/null | wc -l | tr -d ' ')
+        PPO_MODEL=$(ls models/ppo*.zip 2>/dev/null | wc -l | tr -d ' ')
         echo "  ✓ Models saved: DDPG=${DDPG_MODEL}/1, PPO=${PPO_MODEL}/1"
     else
         echo "  • Models: None yet"
     fi
     
-    if [ -d "results_final_benchmark" ]; then
-        RESULTS=$(ls results_final_benchmark/*.json 2>/dev/null | wc -l | tr -d ' ')
+    if [ -d "results" ]; then
+        RESULTS=$(ls results/*.json 2>/dev/null | wc -l | tr -d ' ')
         echo "  ✓ Results files: ${RESULTS}/6"
     else
         echo "  • Results: None yet"
@@ -141,8 +141,8 @@ while true; do
 done
 
 # If training completed, show summary
-if [ -f "results_final_benchmark/ddpg_options_final_metrics.json" ] && \
-   [ -f "results_final_benchmark/ppo_options_final_metrics.json" ]; then
+if [ -f "results/ddpg_options_final_metrics.json" ] && \
+   [ -f "results/ppo_options_final_metrics.json" ]; then
     echo ""
     echo "============================================================"
     echo "  📊 TRAINING COMPLETE - RESULTS SUMMARY"
@@ -152,7 +152,7 @@ if [ -f "results_final_benchmark/ddpg_options_final_metrics.json" ] && \
 import json
 
 print('DDPG Results (2019-2020):')
-with open('results_final_benchmark/ddpg_options_final_metrics.json') as f:
+with open('results/ddpg_options_final_metrics.json') as f:
     m = json.load(f)
     print(f'  Sharpe Ratio:      {m[\"sharpe_ratio\"]:>8.4f}')
     print(f'  Total Return:      {m[\"total_return\"]*100:>7.2f}%')
@@ -162,7 +162,7 @@ with open('results_final_benchmark/ddpg_options_final_metrics.json') as f:
 
 print()
 print('PPO Results (2019-2020):')
-with open('results_final_benchmark/ppo_options_final_metrics.json') as f:
+with open('results/ppo_options_final_metrics.json') as f:
     m = json.load(f)
     print(f'  Sharpe Ratio:      {m[\"sharpe_ratio\"]:>8.4f}')
     print(f'  Total Return:      {m[\"total_return\"]*100:>7.2f}%')

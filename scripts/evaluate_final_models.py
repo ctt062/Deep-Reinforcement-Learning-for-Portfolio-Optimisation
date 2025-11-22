@@ -149,7 +149,7 @@ def main():
     config = load_config(config_path)
     
     # Create output directories
-    results_dir = "results_final_benchmark"
+    results_dir = "results"
     os.makedirs(results_dir, exist_ok=True)
     
     # Load data
@@ -221,8 +221,8 @@ def main():
     
     # Models to evaluate
     models = [
-        ('ddpg', 'models_final_benchmark/ddpg_options_final.zip', DDPG),
-        ('ppo', 'models_final_benchmark/ppo_options_final.zip', PPO)
+        ('ddpg', 'models/ddpg_options_final.zip', DDPG),
+        ('ppo', 'models/ppo_options_final.zip', PPO)
     ]
     
     all_metrics = {}

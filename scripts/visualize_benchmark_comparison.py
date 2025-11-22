@@ -18,8 +18,8 @@ plt.rcParams['axes.facecolor'] = '#f8f9fa'
 plt.rcParams['font.size'] = 10
 
 # Directories
-results_dir = Path("results_final_benchmark")
-output_dir = Path("visualizations_final_benchmark")
+results_dir = Path("results")
+output_dir = Path("visualizations")
 output_dir.mkdir(exist_ok=True)
 
 def load_metrics(agent_name):
@@ -332,7 +332,7 @@ def main():
     
     if len(metrics_dict) == 0:
         print("\n⚠️  No metrics found! Make sure training has completed.")
-        print("   Expected files: results_final_benchmark/*_metrics.json")
+        print("   Expected files: results/*_metrics.json")
         return
     
     print("\nLoading portfolio values...")

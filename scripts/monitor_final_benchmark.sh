@@ -133,10 +133,10 @@ echo ""
 echo "============================================================"
 echo "  Model Files Status:"
 echo "============================================================"
-if [ -d "models_final_benchmark" ]; then
-    ls -lh models_final_benchmark/*.zip 2>/dev/null && echo "" || echo "No model files yet"
+if [ -d "models" ]; then
+    ls -lh models/*.zip 2>/dev/null && echo "" || echo "No model files yet"
 else
-    echo "models_final_benchmark/ directory not created yet"
+    echo "models/ directory not created yet"
 fi
 echo ""
 
@@ -144,16 +144,16 @@ echo ""
 echo "============================================================"
 echo "  Results Status:"
 echo "============================================================"
-if [ -d "results_final_benchmark" ]; then
+if [ -d "results" ]; then
     echo "Results files:"
-    ls -lh results_final_benchmark/*.json 2>/dev/null | tail -10 || echo "No result files yet"
+    ls -lh results/*.json 2>/dev/null | tail -10 || echo "No result files yet"
 else
-    echo "results_final_benchmark/ directory not created yet"
+    echo "results/ directory not created yet"
 fi
 echo ""
 
 # Show summary if training complete
-if [ -f "results_final_benchmark/ddpg_options_final_metrics.json" ] && [ -f "results_final_benchmark/ppo_options_final_metrics.json" ]; then
+if [ -f "results/ddpg_options_final_metrics.json" ] && [ -f "results/ppo_options_final_metrics.json" ]; then
     echo "============================================================"
     echo "  ✅ TRAINING COMPLETED!"
     echo "============================================================"
@@ -164,7 +164,7 @@ if [ -f "results_final_benchmark/ddpg_options_final_metrics.json" ] && [ -f "res
     echo "DDPG Metrics:"
     python3 -c "
 import json
-with open('results_final_benchmark/ddpg_options_final_metrics.json') as f:
+with open('results/ddpg_options_final_metrics.json') as f:
     m = json.load(f)
     print(f\"  Sharpe Ratio: {m['sharpe_ratio']:.4f}\")
     print(f\"  Total Return: {m['total_return']*100:.2f}%\")
@@ -176,7 +176,7 @@ with open('results_final_benchmark/ddpg_options_final_metrics.json') as f:
     echo "PPO Metrics:"
     python3 -c "
 import json
-with open('results_final_benchmark/ppo_options_final_metrics.json') as f:
+with open('results/ppo_options_final_metrics.json') as f:
     m = json.load(f)
     print(f\"  Sharpe Ratio: {m['sharpe_ratio']:.4f}\")
     print(f\"  Total Return: {m['total_return']*100:.2f}%\")

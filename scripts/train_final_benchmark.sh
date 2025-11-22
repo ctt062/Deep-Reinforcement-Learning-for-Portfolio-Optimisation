@@ -13,8 +13,8 @@ echo "============================================================"
 echo ""
 
 # Create directories
-mkdir -p models_final_benchmark
-mkdir -p results_final_benchmark
+mkdir -p models
+mkdir -p results
 mkdir -p logs
 
 # Start training all three models in parallel
@@ -22,7 +22,7 @@ echo "Starting DDPG training..."
 nohup python scripts/train_with_options.py \
   --agent ddpg \
   --config configs/config_final_benchmark.yaml \
-  --output-dir models_final_benchmark \
+  --output-dir models \
   > logs/train_ddpg_final.log 2>&1 &
 DDPG_PID=$!
 echo "✓ DDPG training started (PID: $DDPG_PID)"
@@ -33,7 +33,7 @@ echo "Starting PPO training..."
 nohup python scripts/train_with_options.py \
   --agent ppo \
   --config configs/config_final_benchmark.yaml \
-  --output-dir models_final_benchmark \
+  --output-dir models \
   > logs/train_ppo_final.log 2>&1 &
 PPO_PID=$!
 echo "✓ PPO training started (PID: $PPO_PID)"
@@ -44,7 +44,7 @@ echo "Starting DQN training..."
 nohup python scripts/train_with_options.py \
   --agent dqn \
   --config configs/config_final_benchmark.yaml \
-  --output-dir models_final_benchmark \
+  --output-dir models \
   > logs/train_dqn_final.log 2>&1 &
 DQN_PID=$!
 echo "✓ DQN training started (PID: $DQN_PID)"
