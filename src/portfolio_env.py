@@ -238,17 +238,20 @@ class PortfolioEnv(gym.Env):
             if peak_value > 0:
                 current_drawdown = (peak_value - current_value) / peak_value
                 
-                # AGGRESSIVE exposure reduction based on drawdown (target <10%)
-                if current_drawdown > 0.02:  # 2% drawdown
-                    risk_reduction = 0.9  # Reduce to 90% exposure
+                # VERY AGGRESSIVE exposure reduction based on drawdown (target <10%)
+                # More aggressive thresholds and steeper cuts
+                if current_drawdown > 0.01:  # 1% drawdown
+                    risk_reduction = 0.85  # Reduce to 85% exposure
+                elif current_drawdown > 0.025:  # 2.5% drawdown
+                    risk_reduction = 0.65  # Reduce to 65% exposure
                 elif current_drawdown > 0.04:  # 4% drawdown
-                    risk_reduction = 0.7  # Reduce to 70% exposure
+                    risk_reduction = 0.45  # Reduce to 45% exposure
                 elif current_drawdown > 0.06:  # 6% drawdown
-                    risk_reduction = 0.5  # Reduce to 50% exposure
-                elif current_drawdown > 0.08:  # 8% drawdown
-                    risk_reduction = 0.3  # Reduce to 30% exposure
-                elif current_drawdown > 0.10:  # 10% drawdown (defensive mode)
-                    risk_reduction = 0.1  # Reduce to 10% exposure
+                    risk_reduction = 0.25  # Reduce to 25% exposure
+                elif current_drawdown > 0.08:  # 8% drawdown (emergency mode)
+                    risk_reduction = 0.10  # Reduce to 10% exposure
+                elif current_drawdown > 0.10:  # 10% drawdown (extreme defensive)
+                    risk_reduction = 0.05  # Reduce to 5% exposure
                 else:
                     risk_reduction = 1.0  # Full exposure
                 

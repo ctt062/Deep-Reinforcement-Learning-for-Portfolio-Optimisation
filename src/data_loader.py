@@ -390,13 +390,18 @@ class DataLoader:
     
     def train_test_split(
         self,
-        train_ratio: float = 0.7
+        train_ratio: float = 0.7,
+        train_end: Optional[str] = None
     ) -> Tuple[Dict[str, pd.DataFrame], Dict[str, pd.DataFrame]]:
         """
         Split data into training and testing sets.
         
         Args:
             train_ratio: Proportion of data for training (e.g., 0.7 = 70%).
+                         Ignored if train_end is specified.
+            train_end: Optional explicit end date for training period (YYYY-MM-DD).
+                      If specified, data up to and including this date is used for training,
+                      and data after this date is used for testing.
             
         Returns:
             Tuple of (train_data, test_data) dictionaries containing:
@@ -408,7 +413,15 @@ class DataLoader:
             raise ValueError("Features not built. Call build_features() first.")
         
         # Determine split index
-        split_idx = int(len(self.features) * train_ratio)
+        if train_end is not None:
+            # Use explicit date for split
+            train_end_date = pd.to_datetime(train_end)
+            split_idx = (self.features.index <= train_end_date).sum()
+            print(f"Using explicit train_end date: {train_end}")
+            print(f"Training samples: {split_idx}, Test samples: {len(self.features) - split_idx}")
+        else:
+            # Use ratio-based split
+            split_idx = int(len(self.features) * train_ratio)
         
         # Align all dataframes to feature index
         aligned_prices = self.prices.loc[self.features.index]

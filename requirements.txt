@@ -8,9 +8,10 @@ torch>=2.0.0
 tensorflow>=2.10.0
 
 # Reinforcement Learning
-stable-baselines3>=2.0.0
+stable-baselines3>=2.2.0  # Full gymnasium support
 gymnasium>=0.28.0
-gym>=0.26.0
+# Note: gym is deprecated, use gymnasium instead
+# SB3 2.2.0+ has full gymnasium compatibility
 
 # Financial Data
 yfinance>=0.2.18

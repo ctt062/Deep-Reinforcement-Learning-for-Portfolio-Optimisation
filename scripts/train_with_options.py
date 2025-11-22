@@ -194,9 +194,13 @@ def main():
     
     # Train-test split
     print("\nSplitting data...")
-    train_data, test_data = loader.train_test_split(
-        train_ratio=data_config['train_ratio']
-    )
+    train_end = data_config.get('train_end', None)
+    if train_end:
+        train_data, test_data = loader.train_test_split(train_end=train_end)
+    else:
+        train_data, test_data = loader.train_test_split(
+            train_ratio=data_config['train_ratio']
+        )
     
     # Create environment with options
     print("\nCreating environment with options overlay...")

@@ -1,0 +1,156 @@
+# Final Benchmark: Train 2010-2018, Test 2018-2020
+# Using best configurations for DDPG, PPO, and DQN
+
+data:
+  data_dir: data
+  assets:
+  - AAPL
+  - MSFT
+  - GOOGL
+  - NVDA
+  - AMZN
+  - JNJ
+  - UNH
+  - PFE
+  - JPM
+  - V
+  - WMT
+  - COST
+  - SPY
+  - QQQ
+  - IWM
+  - TLT
+  - AGG
+  - GLD
+  start_date: '2010-01-01'
+  end_date: '2020-12-31'  # Extended to include test period
+  train_end: '2018-12-31'  # Explicit end date for training period
+  train_ratio: 0.727  # Backup: 2010-2018 = 8 years, 2018-2020 = 2 years (8/11 = 0.727)
+  frequency: 1d
+
+features:
+  lookback_window: 60
+  use_prices: true
+  use_returns: true
+  use_log_returns: true
+  sma_periods: [10, 20, 50, 200]
+  ema_periods: [10, 20, 50]
+  ema_alpha: 0.1
+  momentum_periods: [5, 10, 20, 60]
+  normalize_prices: true
+  normalize_method: zscore
+  rolling_normalize: true
+  rolling_window: 252
+
+environment:
+  initial_balance: 100000.0
+  transaction_cost: 0.001
+  allow_short: false
+  max_leverage: 1.0
+  slippage: 0.0
+  reward_type: risk_adjusted
+  risk_penalty_lambda: 0.8  # DDPG V2 optimal value
+  volatility_window: 60
+  risk_free_rate: 0.02
+  turnover_penalty: 0.0005
+  min_position_size: 0.0
+  max_position_size: 0.25
+  enable_stop_loss: true
+  stop_loss_threshold: 0.05
+  stop_loss_action: defensive
+  stop_loss_recovery_threshold: 0.02
+
+options:
+  enabled: true
+  protective_puts:
+    enabled: true
+    max_hedge_ratio: 0.25
+    strike_pct: 0.96
+    expiry_days: 30
+    cost_factor: 0.015
+  covered_calls:
+    enabled: true
+    max_coverage_ratio: 0.25
+    strike_pct: 1.04
+    expiry_days: 30
+    premium_factor: 0.015
+
+agents:
+  ddpg:
+    # DDPG V2 winner configuration
+    policy: MlpPolicy
+    learning_rate: 1.0e-04
+    batch_size: 256
+    buffer_size: 500000
+    learning_starts: 10000
+    gamma: 0.99
+    tau: 0.01
+    action_noise: 0.15
+    train_freq: 1
+    gradient_steps: 1
+    network_arch:
+      pi: [512, 512, 256, 128]
+      qf: [512, 512, 256, 128]
+    # Agent-specific environment parameters
+    risk_penalty_lambda: 0.8
+    turnover_penalty: 0.0005
+  
+  ppo:
+    # PPO V1 configuration (better than V3)
+    policy: MlpPolicy
+    learning_rate: 5.0e-05
+    n_steps: 2048
+    batch_size: 128
+    n_epochs: 10
+    gamma: 0.99
+    gae_lambda: 0.95
+    clip_range: 0.2
+    ent_coef: 0.05
+    vf_coef: 0.5
+    max_grad_norm: 0.5
+    network_arch: [512, 512, 256, 128]
+    # Agent-specific environment parameters
+    risk_penalty_lambda: 1.0
+    turnover_penalty: 0.0005
+
+training:
+  total_timesteps: 100000  # Reduced from 500k for faster training (~3 hours vs 27 hours)
+  eval_freq: 10000
+  n_eval_episodes: 5
+  save_freq: 10000
+  log_interval: 10
+  verbose: 1
+  tensorboard_log: logs
+  device: cpu
+
+evaluation:
+  n_eval_episodes: 1
+  deterministic: true
+  render: false
+
+benchmarks:
+  equal_weight: true
+  mean_variance: true
+  momentum: true
+  mv_lookback: 252
+  mv_target_return: null
+  mv_allow_short: false
+
+metrics:
+  annualized_factor: 252
+  risk_free_rate: 0.02
+  confidence_level: 0.95
+
+visualization:
+  figsize: [12, 6]
+  dpi: 100
+  style: seaborn-v0_8-darkgrid
+  save_format: png
+
+paths:
+  data_dir: data
+  models_dir: models_final_benchmark
+  results_dir: results_final_benchmark
+  logs_dir: logs
+
+seed: 42

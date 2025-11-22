@@ -1,0 +1,140 @@
+agents:
+  ddpg:
+    action_noise: 0.15
+    batch_size: 256
+    buffer_size: 500000
+    gamma: 0.99
+    gradient_steps: 1
+    learning_rate: 0.0001
+    learning_starts: 10000
+    network_arch:
+      pi:
+      - 512
+      - 512
+      - 256
+      - 128
+      qf:
+      - 512
+      - 512
+      - 256
+      - 128
+    policy: MlpPolicy
+    tau: 0.01
+    train_freq: 1
+benchmarks:
+  equal_weight: true
+  mean_variance: true
+  momentum: true
+  mv_allow_short: false
+  mv_lookback: 252
+  mv_target_return: null
+data:
+  assets:
+  - AAPL
+  - MSFT
+  - GOOGL
+  - NVDA
+  - AMZN
+  - JNJ
+  - UNH
+  - PFE
+  - JPM
+  - V
+  - WMT
+  - COST
+  - SPY
+  - QQQ
+  - IWM
+  - TLT
+  - AGG
+  - GLD
+  data_dir: data
+  end_date: '2024-12-31'
+  frequency: 1d
+  start_date: '2010-01-01'
+  train_ratio: 0.7
+environment:
+  allow_short: false
+  enable_stop_loss: true
+  initial_balance: 100000.0
+  max_leverage: 1.0
+  max_position_size: 0.25
+  min_position_size: 0.0
+  reward_type: risk_adjusted
+  risk_free_rate: 0.02
+  risk_penalty_lambda: 0.8
+  slippage: 0.0
+  stop_loss_action: defensive
+  stop_loss_recovery_threshold: 0.02
+  stop_loss_threshold: 0.05
+  transaction_cost: 0.001
+  turnover_penalty: 0.0005
+  volatility_window: 60
+evaluation:
+  deterministic: true
+  n_eval_episodes: 1
+  render: false
+features:
+  ema_alpha: 0.1
+  ema_periods:
+  - 10
+  - 20
+  - 50
+  lookback_window: 60
+  momentum_periods:
+  - 5
+  - 10
+  - 20
+  - 60
+  normalize_method: zscore
+  normalize_prices: true
+  rolling_normalize: true
+  rolling_window: 252
+  sma_periods:
+  - 10
+  - 20
+  - 50
+  - 200
+  use_log_returns: true
+  use_prices: true
+  use_returns: true
+metrics:
+  annualized_factor: 252
+  confidence_level: 0.95
+  risk_free_rate: 0.02
+options:
+  covered_calls:
+    enabled: true
+    expiry_days: 30
+    max_coverage_ratio: 0.25
+    premium_factor: 0.015
+    strike_pct: 1.04
+  enabled: true
+  protective_puts:
+    cost_factor: 0.015
+    enabled: true
+    expiry_days: 30
+    max_hedge_ratio: 0.25
+    strike_pct: 0.96
+paths:
+  data_dir: data
+  logs_dir: logs
+  models_dir: models_ddpg_v2
+  results_dir: results_ddpg_v2
+seed: 42
+training:
+  device: cpu
+  eval_freq: 50000
+  log_interval: 10
+  n_eval_episodes: 5
+  save_freq: 50000
+  tensorboard_log: logs
+  total_timesteps: 500000
+  verbose: 1
+visualization:
+  dpi: 100
+  figsize:
+  - 12
+  - 6
+  save_format: png
+  style: seaborn-v0_8-darkgrid
