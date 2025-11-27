@@ -1,0 +1,135 @@
+\section{Literature Review}
+\label{sec:literature}
+
+\subsection{Classical Portfolio Optimization}
+
+The foundation of modern portfolio theory was established by Harry Markowitz \cite{markowitz1952}, who formulated the mean-variance optimization problem. Given $n$ assets with expected returns $\bm{\mu} \in \R^n$ and covariance matrix $\bm{\Sigma} \in \R^{n \times n}$, the investor seeks portfolio weights $\bw \in \R^n$ that maximize expected return for a given level of risk:
+
+\begin{equation}
+\max_{\bw} \quad \bw^\top \bm{\mu} - \frac{\lambda}{2} \bw^\top \bm{\Sigma} \bw
+\quad \text{s.t.} \quad \bw^\top \mathbf{1} = 1, \quad \bw \geq 0
+\end{equation}
+
+where $\lambda$ is the risk aversion parameter. Despite its theoretical elegance, mean-variance optimization suffers from several practical limitations:
+
+\begin{itemize}
+    \item \textbf{Estimation Sensitivity}: Small errors in $\bm{\mu}$ and $\bm{\Sigma}$ estimates lead to dramatically different optimal portfolios \cite{michaud1989}.
+    \item \textbf{Static Nature}: The single-period formulation ignores the dynamic nature of portfolio rebalancing.
+    \item \textbf{Distributional Assumptions}: Gaussian returns assumption fails to capture fat tails and asymmetric distributions observed in financial markets.
+\end{itemize}
+
+Extensions such as Black-Litterman \cite{black1992} and robust optimization \cite{goldfarb2003} address some of these limitations but remain fundamentally constrained by their reliance on statistical estimation.
+
+\subsection{Reinforcement Learning Foundations}
+
+Reinforcement learning (RL) provides a framework for sequential decision-making under uncertainty \cite{sutton2018}. An RL agent interacts with an environment modeled as a Markov Decision Process (MDP) defined by the tuple $(\mathcal{S}, \mathcal{A}, P, R, \gamma)$:
+
+\begin{itemize}
+    \item $\mathcal{S}$: State space (market observations)
+    \item $\mathcal{A}$: Action space (portfolio weights)
+    \item $P(s'|s,a)$: Transition dynamics
+    \item $R(s,a,s')$: Reward function
+    \item $\gamma \in [0,1]$: Discount factor
+\end{itemize}
+
+The goal is to find a policy $\pi: \mathcal{S} \rightarrow \mathcal{A}$ that maximizes expected cumulative discounted rewards:
+
+\begin{equation}
+J(\pi) = \E_{\pi} \left[ \sum_{t=0}^{\infty} \gamma^t R_t \right]
+\end{equation}
+
+\subsection{Deep Reinforcement Learning for Finance}
+
+The application of deep reinforcement learning to financial problems has gained significant momentum in recent years. Several key works have demonstrated the potential of DRL for portfolio management:
+
+\textbf{Jiang et al. (2017)} \cite{jiang2017} proposed a deep learning framework for portfolio management using a convolutional neural network to extract features from historical price data. Their approach achieved competitive performance against traditional benchmarks.
+
+\textbf{Liang et al. (2018)} \cite{liang2018} applied DDPG to portfolio optimization, demonstrating superior performance compared to traditional methods on Chinese stock market data.
+
+\textbf{Yang et al. (2020)} \cite{yang2020} developed FinRL, an open-source library for financial reinforcement learning that provides standardized implementations of popular DRL algorithms.
+
+\textbf{Liu et al. (2021)} \cite{liu2021} proposed an ensemble method combining multiple DRL agents for more robust portfolio decisions.
+
+\subsection{Actor-Critic Methods}
+
+Actor-critic methods combine value-based and policy-based approaches, using a critic to estimate value functions and an actor to optimize the policy. This architecture offers several advantages:
+
+\begin{itemize}
+    \item \textbf{Reduced Variance}: The critic's value estimates provide a baseline for variance reduction in policy gradient updates.
+    \item \textbf{Continuous Actions}: Actor networks can directly output continuous actions, suitable for portfolio weight allocation.
+    \item \textbf{Sample Efficiency}: Combining on-policy and off-policy learning improves data utilization.
+\end{itemize}
+
+\subsubsection{Deep Deterministic Policy Gradient (DDPG)}
+
+DDPG \cite{lillicrap2015} extends the deterministic policy gradient theorem to deep neural networks. Key features include:
+
+\begin{itemize}
+    \item \textbf{Deterministic Policy}: The actor outputs a deterministic action $a = \mu_\theta(s)$, with exploration noise added during training.
+    \item \textbf{Experience Replay}: Transitions are stored in a replay buffer and sampled randomly for training, breaking temporal correlations.
+    \item \textbf{Target Networks}: Slowly-updated target networks stabilize training by providing consistent targets for Q-value estimation.
+    \item \textbf{Off-Policy Learning}: DDPG can learn from past experiences, improving sample efficiency.
+\end{itemize}
+
+\subsubsection{Proximal Policy Optimization (PPO)}
+
+PPO \cite{schulman2017} addresses the challenge of stable policy updates in on-policy methods. Key innovations include:
+
+\begin{itemize}
+    \item \textbf{Clipped Objective}: The surrogate objective is clipped to prevent excessively large policy updates.
+    \item \textbf{Trust Region}: The clipping mechanism implicitly enforces a trust region constraint on policy changes.
+    \item \textbf{Sample Efficiency}: Multiple epochs of optimization on the same batch of data improve learning efficiency.
+    \item \textbf{Simplicity}: PPO achieves competitive performance with simpler implementation compared to methods like TRPO.
+\end{itemize}
+
+\subsection{Options in Portfolio Management}
+
+Options provide non-linear payoff profiles that can be used for hedging and speculation. The Black-Scholes model \cite{black1973} provides the foundational framework for options pricing:
+
+\begin{equation}
+C = S_0 N(d_1) - K e^{-rT} N(d_2)
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $d_1 = \frac{\ln(S_0/K) + (r + \sigma^2/2)T}{\sigma\sqrt{T}}$
+    \item $d_2 = d_1 - \sigma\sqrt{T}$
+    \item $N(\cdot)$ is the cumulative standard normal distribution
+\end{itemize}
+
+Protective puts represent a fundamental hedging strategy where an investor holding a long position purchases put options to limit downside risk. The payoff at expiration is:
+
+\begin{equation}
+\text{Payoff} = \max(S_T, K) - P_0
+\end{equation}
+
+where $P_0$ is the premium paid for the put option. This creates an asymmetric payoff profile that preserves upside potential while limiting losses.
+
+\subsection{Risk Management in Algorithmic Trading}
+
+Effective risk management is crucial for algorithmic trading systems. Common approaches include:
+
+\begin{itemize}
+    \item \textbf{Position Sizing}: Kelly criterion and fractional Kelly methods optimize position sizes based on edge and variance.
+    \item \textbf{Stop-Loss Orders}: Automatic position liquidation when losses exceed predetermined thresholds.
+    \item \textbf{Portfolio Constraints}: Limits on sector exposure, single-stock concentration, and leverage.
+    \item \textbf{Value-at-Risk (VaR)}: Statistical measures of potential losses at given confidence levels.
+\end{itemize}
+
+Our work integrates multiple risk management approaches within the DRL framework, including options-based hedging and tiered stop-loss mechanisms.
+
+\subsection{Gap in Literature}
+
+While significant progress has been made in applying DRL to portfolio optimization, several gaps remain:
+
+\begin{enumerate}
+    \item \textbf{Options Integration}: Most DRL portfolio management studies focus on equity allocation without incorporating derivative instruments for hedging.
+    
+    \item \textbf{Systematic Risk Management}: Few studies integrate explicit risk management mechanisms within the DRL framework.
+    
+    \item \textbf{Stress Testing}: Limited evaluation of DRL agents during extreme market events like the COVID-19 crash.
+    
+    \item \textbf{Algorithm Comparison}: Comprehensive comparisons between DDPG and PPO for portfolio optimization under consistent experimental conditions are scarce.
+\end{enumerate}
+
+This work addresses these gaps by developing an integrated framework that combines DRL-based portfolio optimization with options hedging and systematic risk management, evaluated rigorously during both normal and crisis market conditions.

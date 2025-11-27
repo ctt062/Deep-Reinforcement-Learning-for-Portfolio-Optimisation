@@ -1,0 +1,278 @@
+\section{Configuration Parameters}
+\label{app:config}
+
+This appendix provides the complete configuration parameters used in our experiments.
+
+\subsection{YAML Configuration File}
+
+The following configuration file (\texttt{configs/config\_final\_benchmark.yaml}) specifies all experimental parameters:
+
+\begin{verbatim}
+# Final Benchmark Configuration
+# Deep Reinforcement Learning for Portfolio Optimization
+
+# Data Configuration
+data:
+  tickers:
+    - AAPL
+    - MSFT
+    - GOOGL
+    - NVDA
+    - AMZN
+    - JNJ
+    - UNH
+    - PFE
+    - JPM
+    - V
+    - WMT
+    - COST
+    - SPY
+    - QQQ
+    - IWM
+    - TLT
+    - AGG
+    - GLD
+  train_start: "2010-01-01"
+  train_end: "2018-12-31"
+  test_start: "2019-01-01"
+  test_end: "2020-12-31"
+
+# Environment Configuration
+environment:
+  initial_balance: 1000000
+  transaction_cost: 0.001  # 10 basis points
+  lookback_window: 20
+  risk_free_rate: 0.02
+  risk_penalty: 0.5
+
+# Options Configuration
+options:
+  enabled: true
+  max_hedge_ratio: 0.2
+  strike_percentage: 0.95  # 5% OTM puts
+  expiry_days: 30
+  implied_volatility: 0.25
+
+# Stop-Loss Configuration
+stop_loss:
+  enabled: true
+  thresholds:
+    - level: 0.05
+      exposure: 0.75
+    - level: 0.10
+      exposure: 0.50
+    - level: 0.15
+      exposure: 0.25
+
+# DDPG Configuration
+ddpg:
+  learning_rate: 0.0001
+  buffer_size: 100000
+  learning_starts: 1000
+  batch_size: 128
+  tau: 0.005
+  gamma: 0.99
+  train_freq: 1
+  gradient_steps: 1
+  noise_type: "ornstein-uhlenbeck"
+  noise_sigma: 0.1
+  noise_theta: 0.15
+  policy_kwargs:
+    net_arch: [256, 256]
+
+# PPO Configuration
+ppo:
+  learning_rate: 0.0003
+  n_steps: 2048
+  batch_size: 64
+  n_epochs: 10
+  gamma: 0.99
+  gae_lambda: 0.95
+  clip_range: 0.2
+  clip_range_vf: null
+  ent_coef: 0.01
+  vf_coef: 0.5
+  max_grad_norm: 0.5
+  policy_kwargs:
+    net_arch: [256, 256]
+
+# Training Configuration
+training:
+  total_timesteps: 200000
+  eval_freq: 10000
+  n_eval_episodes: 1
+  deterministic_eval: true
+  seed: 42
+  verbose: 1
+
+# Logging Configuration
+logging:
+  log_dir: "logs/"
+  tensorboard: true
+  save_freq: 50000
+
+# Output Configuration
+output:
+  models_dir: "models/"
+  results_dir: "results/"
+  visualizations_dir: "visualizations/"
+\end{verbatim}
+
+\subsection{Network Architecture Details}
+
+\subsubsection{Actor Network (DDPG)}
+
+\begin{table}[htbp]
+\centering
+\caption{DDPG Actor Network Architecture}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Layer} & \textbf{Input Dim} & \textbf{Output Dim} & \textbf{Activation} \\
+\midrule
+Input & -- & state\_dim & -- \\
+FC1 & state\_dim & 256 & ReLU \\
+FC2 & 256 & 256 & ReLU \\
+Output & 256 & action\_dim & Softmax \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Critic Network (DDPG)}
+
+\begin{table}[htbp]
+\centering
+\caption{DDPG Critic Network Architecture}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Layer} & \textbf{Input Dim} & \textbf{Output Dim} & \textbf{Activation} \\
+\midrule
+State Input & -- & state\_dim & -- \\
+FC1 (state) & state\_dim & 256 & ReLU \\
+Concat & 256 + action\_dim & 256 + action\_dim & -- \\
+FC2 & 256 + action\_dim & 256 & ReLU \\
+Output & 256 & 1 & Linear \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Policy Network (PPO)}
+
+\begin{table}[htbp]
+\centering
+\caption{PPO Policy Network Architecture}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Layer} & \textbf{Input Dim} & \textbf{Output Dim} & \textbf{Activation} \\
+\midrule
+Input & -- & state\_dim & -- \\
+FC1 & state\_dim & 256 & ReLU \\
+FC2 & 256 & 256 & ReLU \\
+Mean Output & 256 & action\_dim & Tanh \\
+Log Std & 256 & action\_dim & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{State Space Specification}
+
+The state vector consists of the following components:
+
+\begin{table}[htbp]
+\centering
+\caption{State Space Components}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Component} & \textbf{Dimension} & \textbf{Description} \\
+\midrule
+Historical Returns & $n \times L$ & Returns for $n$ assets over $L$ days \\
+Rolling Volatility & $n$ & 20-day rolling volatility \\
+Current Weights & $n$ & Current portfolio allocation \\
+Portfolio Value & 1 & Normalized portfolio value \\
+Drawdown & 1 & Current drawdown level \\
+\midrule
+\textbf{Total} & $n \times L + 2n + 2$ & 382 dimensions \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+With $n = 18$ assets and $L = 20$ days: $18 \times 20 + 2 \times 18 + 2 = 398$ dimensions.
+
+\subsection{Action Space Specification}
+
+\begin{table}[htbp]
+\centering
+\caption{Action Space Components}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Component} & \textbf{Dimension} & \textbf{Range} \\
+\midrule
+Asset Weights & $n = 18$ & $[0, 1]$ \\
+Hedge Ratio & 1 & $[0, 0.2]$ \\
+\midrule
+\textbf{Total} & 19 & Softmax normalized \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Hardware and Software Specifications}
+
+\begin{table}[htbp]
+\centering
+\caption{Computational Environment}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Component} & \textbf{Specification} \\
+\midrule
+Operating System & macOS \\
+CPU & Apple M-series \\
+RAM & 16+ GB \\
+Python Version & 3.13.3 \\
+PyTorch Version & 2.x \\
+Stable-Baselines3 & 2.x \\
+Gymnasium & 0.29.x \\
+NumPy & 1.26.x \\
+Pandas & 2.x \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Training Time and Resources}
+
+\begin{table}[htbp]
+\centering
+\caption{Training Resource Requirements}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\textbf{Metric} & \textbf{DDPG} & \textbf{PPO} \\
+\midrule
+Training Time & $\sim$45 min & $\sim$30 min \\
+Peak Memory & 2.1 GB & 1.8 GB \\
+Model Size & 2.4 MB & 2.1 MB \\
+Replay Buffer & 800 MB & N/A \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Reproducibility Checklist}
+
+To reproduce our results:
+
+\begin{enumerate}
+    \item Clone the repository
+    \item Install dependencies: \texttt{pip install -r requirements.txt}
+    \item Set random seed: \texttt{seed = 42}
+    \item Run training: \texttt{python scripts/train\_final\_benchmark.sh}
+    \item Run evaluation: \texttt{python scripts/evaluate\_final\_models.py}
+    \item Generate visualizations: \texttt{python scripts/visualize\_benchmark\_comparison.py}
+\end{enumerate}
+
+\subsection{Data Preprocessing Steps}
+
+\begin{enumerate}
+    \item Fetch adjusted close prices from Yahoo Finance
+    \item Forward-fill missing values (holidays, gaps)
+    \item Calculate daily logarithmic returns
+    \item Compute 20-day rolling volatility
+    \item Normalize features to zero mean, unit variance
+    \item Split into training (2010-2018) and test (2019-2020) sets
+\end{enumerate}

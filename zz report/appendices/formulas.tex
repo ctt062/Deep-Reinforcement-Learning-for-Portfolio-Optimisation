@@ -1,0 +1,263 @@
+\section{Mathematical Formulas Reference}
+\label{app:formulas}
+
+This appendix provides a comprehensive reference of all mathematical formulas used in this project.
+
+\subsection{Return Calculations}
+
+\subsubsection{Simple Return}
+\begin{equation}
+r_t = \frac{P_t - P_{t-1}}{P_{t-1}}
+\end{equation}
+
+\subsubsection{Logarithmic Return}
+\begin{equation}
+r_t^{\log} = \ln\left(\frac{P_t}{P_{t-1}}\right)
+\end{equation}
+
+\subsubsection{Portfolio Return}
+\begin{equation}
+R_t^{\text{port}} = \sum_{i=1}^{n} w_i \cdot r_i^t
+\end{equation}
+
+\subsubsection{Cumulative Return}
+\begin{equation}
+R_{\text{cumulative}} = \prod_{t=1}^{T}(1 + r_t) - 1
+\end{equation}
+
+\subsubsection{Annualized Return}
+\begin{equation}
+R_{\text{annual}} = \left(\prod_{t=1}^{T}(1 + r_t)\right)^{252/T} - 1
+\end{equation}
+
+\subsection{Risk Metrics}
+
+\subsubsection{Volatility (Standard Deviation)}
+\begin{equation}
+\sigma = \sqrt{\frac{1}{T-1}\sum_{t=1}^{T}(r_t - \bar{r})^2}
+\end{equation}
+
+\subsubsection{Annualized Volatility}
+\begin{equation}
+\sigma_{\text{annual}} = \sigma_{\text{daily}} \times \sqrt{252}
+\end{equation}
+
+\subsubsection{Drawdown}
+\begin{equation}
+DD_t = \frac{V_t^{\text{peak}} - V_t}{V_t^{\text{peak}}}
+\end{equation}
+
+where:
+\begin{equation}
+V_t^{\text{peak}} = \max_{s \leq t} V_s
+\end{equation}
+
+\subsubsection{Maximum Drawdown}
+\begin{equation}
+MDD = \max_{t \in [0,T]} DD_t
+\end{equation}
+
+\subsubsection{Downside Deviation}
+\begin{equation}
+\sigma_{\text{down}} = \sqrt{\frac{1}{T}\sum_{t: r_t < \tau}(r_t - \tau)^2}
+\end{equation}
+
+where $\tau$ is the target return (often 0 or the risk-free rate).
+
+\subsection{Performance Ratios}
+
+\subsubsection{Sharpe Ratio}
+\begin{equation}
+\text{Sharpe} = \frac{\E[R] - r_f}{\sigma}
+\end{equation}
+
+Annualized:
+\begin{equation}
+\text{Sharpe}_{\text{annual}} = \sqrt{252} \times \frac{\bar{r}_{\text{daily}} - r_f/252}{\sigma_{\text{daily}}}
+\end{equation}
+
+\subsubsection{Sortino Ratio}
+\begin{equation}
+\text{Sortino} = \frac{\E[R] - r_f}{\sigma_{\text{down}}}
+\end{equation}
+
+\subsubsection{Calmar Ratio}
+\begin{equation}
+\text{Calmar} = \frac{R_{\text{annual}}}{MDD}
+\end{equation}
+
+\subsubsection{Information Ratio}
+\begin{equation}
+\text{IR} = \frac{\E[R_p - R_b]}{\sigma(R_p - R_b)}
+\end{equation}
+
+where $R_b$ is the benchmark return.
+
+\subsection{Deep Deterministic Policy Gradient (DDPG)}
+
+\subsubsection{Critic Loss (TD Error)}
+\begin{equation}
+L(\phi) = \E_{(s,a,r,s') \sim \mathcal{D}} \left[ \left( Q_\phi(s,a) - y \right)^2 \right]
+\end{equation}
+
+\subsubsection{Target Value}
+\begin{equation}
+y = r + \gamma Q_{\phi'}(s', \mu_{\theta'}(s'))
+\end{equation}
+
+\subsubsection{Policy Gradient}
+\begin{equation}
+\nabla_\theta J = \E_{s \sim \mathcal{D}} \left[ \nabla_a Q_\phi(s,a)|_{a=\mu_\theta(s)} \cdot \nabla_\theta \mu_\theta(s) \right]
+\end{equation}
+
+\subsubsection{Soft Target Update}
+\begin{align}
+\theta' &\leftarrow \tau \theta + (1-\tau)\theta' \\
+\phi' &\leftarrow \tau \phi + (1-\tau)\phi'
+\end{align}
+
+\subsubsection{Ornstein-Uhlenbeck Noise}
+\begin{equation}
+d\mathcal{N}_t = \theta_{\text{OU}}(\mu_{\text{OU}} - \mathcal{N}_t)dt + \sigma_{\text{OU}} dW_t
+\end{equation}
+
+\subsection{Proximal Policy Optimization (PPO)}
+
+\subsubsection{Clipped Surrogate Objective}
+\begin{equation}
+L^{\text{CLIP}}(\theta) = \E_t \left[ \min\left( r_t(\theta) \hat{A}_t, \text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon) \hat{A}_t \right) \right]
+\end{equation}
+
+\subsubsection{Probability Ratio}
+\begin{equation}
+r_t(\theta) = \frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{\text{old}}}(a_t|s_t)}
+\end{equation}
+
+\subsubsection{Generalized Advantage Estimation (GAE)}
+\begin{equation}
+\hat{A}_t = \sum_{l=0}^{\infty} (\gamma \lambda)^l \delta_{t+l}
+\end{equation}
+
+\subsubsection{TD Residual}
+\begin{equation}
+\delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)
+\end{equation}
+
+\subsubsection{Value Function Loss}
+\begin{equation}
+L^{VF}(\psi) = \E_t\left[(V_\psi(s_t) - V_t^{\text{target}})^2\right]
+\end{equation}
+
+\subsubsection{Entropy Bonus}
+\begin{equation}
+S[\pi_\theta] = -\E_t\left[\log \pi_\theta(a_t|s_t)\right]
+\end{equation}
+
+\subsubsection{Complete PPO Objective}
+\begin{equation}
+L(\theta, \psi) = L^{\text{CLIP}}(\theta) - c_1 L^{VF}(\psi) + c_2 S[\pi_\theta]
+\end{equation}
+
+\subsection{Options Pricing (Black-Scholes)}
+
+\subsubsection{Call Option Price}
+\begin{equation}
+C = S_0 N(d_1) - K e^{-rT} N(d_2)
+\end{equation}
+
+\subsubsection{Put Option Price}
+\begin{equation}
+P = K e^{-rT} N(-d_2) - S_0 N(-d_1)
+\end{equation}
+
+\subsubsection{d1 and d2 Parameters}
+\begin{align}
+d_1 &= \frac{\ln(S_0/K) + (r + \sigma^2/2)T}{\sigma\sqrt{T}} \\
+d_2 &= d_1 - \sigma\sqrt{T}
+\end{align}
+
+\subsubsection{Put-Call Parity}
+\begin{equation}
+C - P = S_0 - K e^{-rT}
+\end{equation}
+
+\subsubsection{Option Greeks}
+
+\textbf{Delta (Call):}
+\begin{equation}
+\Delta_C = N(d_1)
+\end{equation}
+
+\textbf{Delta (Put):}
+\begin{equation}
+\Delta_P = N(d_1) - 1
+\end{equation}
+
+\textbf{Gamma:}
+\begin{equation}
+\Gamma = \frac{N'(d_1)}{S_0 \sigma \sqrt{T}}
+\end{equation}
+
+\textbf{Theta (Call):}
+\begin{equation}
+\Theta_C = -\frac{S_0 N'(d_1) \sigma}{2\sqrt{T}} - rKe^{-rT}N(d_2)
+\end{equation}
+
+\textbf{Vega:}
+\begin{equation}
+\mathcal{V} = S_0 \sqrt{T} N'(d_1)
+\end{equation}
+
+\subsection{Payoff Functions}
+
+\subsubsection{Call Option Payoff}
+\begin{equation}
+\Pi_{\text{call}} = \max(S_T - K, 0)
+\end{equation}
+
+\subsubsection{Put Option Payoff}
+\begin{equation}
+\Pi_{\text{put}} = \max(K - S_T, 0)
+\end{equation}
+
+\subsubsection{Protective Put Payoff}
+\begin{equation}
+\Pi_{\text{protective}} = S_T + \max(K - S_T, 0) - P_0 = \max(S_T, K) - P_0
+\end{equation}
+
+\subsection{Stop-Loss Mechanism}
+
+\subsubsection{Tiered Exposure Adjustment}
+\begin{equation}
+\text{Exposure} = 
+\begin{cases}
+1.00 & \text{if } DD < 5\% \\
+0.75 & \text{if } 5\% \leq DD < 10\% \\
+0.50 & \text{if } 10\% \leq DD < 15\% \\
+0.25 & \text{if } DD \geq 15\%
+\end{cases}
+\end{equation}
+
+\subsubsection{Adjusted Portfolio Weights}
+\begin{equation}
+w_i^{\text{adj}} = w_i \times \text{Exposure}
+\end{equation}
+
+\subsection{Reward Function}
+
+\subsubsection{Risk-Adjusted Reward}
+\begin{equation}
+r_t = R_t^{\text{port}} - \lambda_{\text{risk}} \cdot \max(0, -R_t^{\text{port}})^2 - \lambda_{\text{tc}} \cdot \|\bw_t - \bw_{t-1}\|_1
+\end{equation}
+
+\subsubsection{Turnover}
+\begin{equation}
+\text{Turnover}_t = \sum_{i=1}^{n} |w_i^t - w_i^{t-1}|
+\end{equation}
+
+\subsubsection{Transaction Costs}
+\begin{equation}
+TC_t = c \times \text{Turnover}_t \times V_t
+\end{equation}
+
+where $c$ is the proportional transaction cost rate.

@@ -1,0 +1,257 @@
+\section{Experimental Setup}
+\label{sec:experiments}
+
+\subsection{Asset Universe}
+
+We construct a diversified portfolio spanning eight market sectors to test the generalization capabilities of our DRL agents. Table \ref{tab:assets} presents the complete asset universe.
+
+\begin{table}[htbp]
+\centering
+\caption{Asset universe with 18 diversified instruments}
+\label{tab:assets}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Ticker} & \textbf{Name} & \textbf{Sector} \\
+\midrule
+AAPL & Apple Inc. & Technology \\
+MSFT & Microsoft Corporation & Technology \\
+GOOGL & Alphabet Inc. & Technology \\
+NVDA & NVIDIA Corporation & Technology \\
+AMZN & Amazon.com Inc. & Technology \\
+\midrule
+JNJ & Johnson \& Johnson & Healthcare \\
+UNH & UnitedHealth Group & Healthcare \\
+PFE & Pfizer Inc. & Healthcare \\
+\midrule
+JPM & JPMorgan Chase & Financials \\
+V & Visa Inc. & Financials \\
+\midrule
+WMT & Walmart Inc. & Consumer Staples \\
+COST & Costco Wholesale & Consumer Staples \\
+\midrule
+SPY & S\&P 500 ETF & Index \\
+QQQ & NASDAQ-100 ETF & Index \\
+IWM & Russell 2000 ETF & Index \\
+\midrule
+TLT & 20+ Year Treasury ETF & Bonds \\
+AGG & Aggregate Bond ETF & Bonds \\
+\midrule
+GLD & Gold ETF & Commodities \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The asset selection provides:
+\begin{itemize}
+    \item \textbf{Sector Diversification}: Eight distinct sectors reduce concentration risk
+    \item \textbf{Asset Class Diversity}: Equities, bonds, and commodities offer different risk-return profiles
+    \item \textbf{Liquidity}: All assets are highly liquid with minimal transaction costs
+    \item \textbf{Data Quality}: Long history of reliable price data available
+\end{itemize}
+
+\subsection{Data Period and Split}
+
+We use data from January 1, 2010 to December 31, 2020, providing over a decade of market history including various market regimes.
+
+\begin{table}[htbp]
+\centering
+\caption{Data period configuration}
+\label{tab:periods}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Period} & \textbf{Start} & \textbf{End} & \textbf{Purpose} \\
+\midrule
+Training & 2010-01-01 & 2018-12-31 & Agent learning \\
+Testing & 2019-01-01 & 2020-12-31 & Out-of-sample evaluation \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Key characteristics of each period:
+
+\textbf{Training Period (2010-2018):}
+\begin{itemize}
+    \item Post-financial crisis recovery (2010-2012)
+    \item Quantitative easing era (2012-2015)
+    \item Low volatility bull market (2016-2018)
+    \item Various market corrections and sector rotations
+    \item Approximately 2,265 trading days
+\end{itemize}
+
+\textbf{Testing Period (2019-2020):}
+\begin{itemize}
+    \item 2019: Strong bull market with trade war uncertainties
+    \item 2020: COVID-19 pandemic crash (March) and subsequent recovery
+    \item Extreme volatility regime (VIX spike to 82.69 in March 2020)
+    \item V-shaped recovery demonstrating market resilience
+    \item Approximately 504 trading days
+\end{itemize}
+
+\subsection{Why No Validation Set?}
+
+Unlike supervised learning, we do not use a separate validation set for the following reasons:
+
+\begin{enumerate}
+    \item \textbf{Sequential Data}: Financial time series must maintain temporal order; shuffling would create look-ahead bias.
+    
+    \item \textbf{On-Policy Learning}: Agents learn from their own experience in the environment, making traditional validation less applicable.
+    
+    \item \textbf{Hyperparameter Selection}: We use established hyperparameters from literature rather than extensive tuning on validation data.
+    
+    \item \textbf{Overfitting Prevention}: Early stopping based on training reward curves and model capacity constraints prevent overfitting.
+    
+    \item \textbf{Maximum Training Data}: All available pre-2019 data is used for training to maximize learning from diverse market conditions.
+\end{enumerate}
+
+\subsection{Hyperparameter Configuration}
+
+\subsubsection{DDPG Hyperparameters}
+
+\begin{table}[htbp]
+\centering
+\caption{DDPG hyperparameter configuration}
+\label{tab:ddpg_params}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Learning rate (actor) & $1 \times 10^{-4}$ \\
+Learning rate (critic) & $1 \times 10^{-3}$ \\
+Replay buffer size & 100,000 \\
+Batch size & 128 \\
+Discount factor ($\gamma$) & 0.99 \\
+Soft update coefficient ($\tau$) & 0.005 \\
+Network architecture & [256, 256] \\
+Activation function & ReLU \\
+OU noise $\sigma$ & 0.1 \\
+OU noise $\theta$ & 0.15 \\
+Training timesteps & 200,000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{PPO Hyperparameters}
+
+\begin{table}[htbp]
+\centering
+\caption{PPO hyperparameter configuration}
+\label{tab:ppo_params}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Learning rate & $3 \times 10^{-4}$ \\
+Steps per update & 2,048 \\
+Batch size & 64 \\
+Number of epochs & 10 \\
+Discount factor ($\gamma$) & 0.99 \\
+GAE parameter ($\lambda$) & 0.95 \\
+Clip range ($\epsilon$) & 0.2 \\
+Entropy coefficient & 0.01 \\
+Value function coefficient & 0.5 \\
+Network architecture & [256, 256] \\
+Training timesteps & 200,000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Environment Configuration}
+
+\begin{table}[htbp]
+\centering
+\caption{Environment configuration parameters}
+\label{tab:env_params}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Parameter} & \textbf{Value} \\
+\midrule
+Initial portfolio value & \$1,000,000 \\
+Transaction cost & 0.001 (10 bps) \\
+Lookback window & 20 days \\
+Risk-free rate & 2\% annual \\
+Risk penalty coefficient & 0.5 \\
+Maximum hedge ratio & 0.2 \\
+Put option strike & 95\% of portfolio value \\
+Put option expiry & 30 days \\
+Stop-loss thresholds & [5\%, 10\%, 15\%] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Benchmark Strategies}
+
+We compare DRL agents against several benchmark strategies:
+
+\begin{enumerate}
+    \item \textbf{Equal Weight (1/N)}: Allocates equal weight to all assets
+    \begin{equation}
+    w_i = \frac{1}{n} \quad \forall i
+    \end{equation}
+    
+    \item \textbf{SPY Buy-and-Hold}: 100\% allocation to S\&P 500 ETF
+    \begin{equation}
+    w_{\text{SPY}} = 1, \quad w_i = 0 \; \forall i \neq \text{SPY}
+    \end{equation}
+    
+    \item \textbf{60/40 Portfolio}: Traditional balanced allocation
+    \begin{equation}
+    w_{\text{equity}} = 0.6, \quad w_{\text{bonds}} = 0.4
+    \end{equation}
+\end{enumerate}
+
+\subsection{Evaluation Metrics}
+
+We evaluate performance using multiple metrics:
+
+\begin{table}[htbp]
+\centering
+\caption{Performance evaluation metrics}
+\label{tab:metrics}
+\begin{tabular}{@{}lp{8cm}@{}}
+\toprule
+\textbf{Metric} & \textbf{Description} \\
+\midrule
+Total Return & Cumulative portfolio return over test period \\
+Annualized Return & Geometric mean annual return \\
+Annualized Volatility & Standard deviation of returns, annualized \\
+Sharpe Ratio & Risk-adjusted return measure \\
+Sortino Ratio & Downside risk-adjusted return \\
+Maximum Drawdown & Largest peak-to-trough decline \\
+Calmar Ratio & Annual return divided by max drawdown \\
+Win Rate & Percentage of positive return days \\
+Average Daily Return & Mean daily portfolio return \\
+Options P\&L & Cumulative profit/loss from hedging \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Computational Environment}
+
+Experiments were conducted using the following setup:
+
+\begin{itemize}
+    \item \textbf{Hardware}: MacBook Pro with Apple M-series chip
+    \item \textbf{Software}: Python 3.13.3, PyTorch 2.x
+    \item \textbf{Libraries}: 
+    \begin{itemize}
+        \item Stable-Baselines3 for DRL implementations
+        \item Gymnasium for environment interface
+        \item NumPy, Pandas for data manipulation
+        \item Matplotlib, Seaborn for visualization
+    \end{itemize}
+    \item \textbf{Training Time}: Approximately 30-60 minutes per agent
+\end{itemize}
+
+\subsection{Reproducibility}
+
+To ensure reproducibility:
+\begin{itemize}
+    \item Random seeds are fixed across all experiments
+    \item Configuration files specify all hyperparameters
+    \item Data preprocessing steps are documented
+    \item Trained models are saved and versioned
+    \item Evaluation scripts produce deterministic results
+\end{itemize}
+
+The complete codebase is available at:\\
+\url{https://github.com/[repository-link]}

@@ -1,0 +1,358 @@
+\section{Implementation}
+\label{sec:implementation}
+
+\subsection{System Architecture}
+
+The system follows a modular architecture designed for flexibility and extensibility. Figure \ref{fig:architecture} illustrates the high-level component interactions.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+    node distance=1.2cm and 1.5cm,
+    box/.style={rectangle, draw, rounded corners, minimum width=2cm, minimum height=0.8cm, align=center, font=\small},
+    arrow/.style={->, >=stealth, thick}
+]
+% Data Layer
+\node[box, fill=blue!20] (data) {Data Loader};
+\node[box, fill=blue!20, right=of data] (env) {Environment};
+\node[box, fill=green!20, right=of env] (agent) {DRL Agent};
+\node[box, fill=orange!20, right=of agent] (eval) {Evaluator};
+
+% Arrows
+\draw[arrow] (data) -- (env);
+\draw[arrow] (env) -- (agent);
+\draw[arrow] (agent) -- (eval);
+\draw[arrow, bend left=30] (agent) to node[above, font=\scriptsize] {actions} (env);
+\draw[arrow, bend left=30] (env) to node[below, font=\scriptsize] {rewards} (agent);
+\end{tikzpicture}
+\caption{High-level system architecture showing data flow between components.}
+\label{fig:architecture}
+\end{figure}
+
+\subsection{Code Organization}
+
+The codebase is organized into the following modules:
+
+\begin{table}[htbp]
+\centering
+\caption{Project module structure and responsibilities}
+\label{tab:modules}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Module} & \textbf{Responsibility} \\
+\midrule
+\texttt{src/data\_loader.py} & Data loading and preprocessing \\
+\texttt{src/portfolio\_env.py} & Base portfolio environment (Gym) \\
+\texttt{src/portfolio\_env\_with\_options.py} & Extended environment with options \\
+\texttt{src/agents.py} & DDPG and PPO agent implementations \\
+\texttt{src/options\_pricing.py} & Black-Scholes pricing functions \\
+\texttt{src/metrics.py} & Performance metric calculations \\
+\texttt{src/benchmarks.py} & Benchmark strategy implementations \\
+\texttt{src/visualization.py} & Plotting and visualization utilities \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Data Loading and Preprocessing}
+
+The \texttt{DataLoader} class handles data acquisition and preprocessing:
+
+\begin{verbatim}
+class DataLoader:
+    def __init__(self, tickers, start_date, end_date):
+        self.tickers = tickers
+        self.start_date = start_date
+        self.end_date = end_date
+    
+    def load_data(self):
+        # Fetch adjusted close prices
+        # Calculate returns
+        # Handle missing data
+        return prices, returns
+\end{verbatim}
+
+Key preprocessing steps include:
+\begin{enumerate}
+    \item Fetching adjusted close prices from Yahoo Finance
+    \item Computing logarithmic returns: $r_t = \ln(P_t/P_{t-1})$
+    \item Forward-filling missing values
+    \item Calculating rolling statistics (volatility, correlations)
+    \item Normalizing features to zero mean and unit variance
+\end{enumerate}
+
+\subsection{Portfolio Environment}
+
+The portfolio environment extends OpenAI Gym's interface:
+
+\begin{verbatim}
+class PortfolioEnvWithOptions(gym.Env):
+    def __init__(self, prices, config):
+        self.action_space = spaces.Box(
+            low=0, high=1, 
+            shape=(n_assets + 1,)  # +1 for hedge ratio
+        )
+        self.observation_space = spaces.Box(
+            low=-np.inf, high=np.inf,
+            shape=(state_dim,)
+        )
+    
+    def step(self, action):
+        # Process action (allocate weights)
+        # Calculate portfolio return
+        # Apply options hedging
+        # Check stop-loss conditions
+        # Return observation, reward, done, info
+    
+    def reset(self):
+        # Reset to initial state
+        return initial_observation
+\end{verbatim}
+
+\subsubsection{State Construction}
+
+The state vector is constructed as:
+\begin{verbatim}
+def _get_state(self):
+    # Historical returns (flattened)
+    returns_history = self.returns[
+        self.current_step - self.lookback:self.current_step
+    ].flatten()
+    
+    # Current portfolio weights
+    current_weights = self.weights
+    
+    # Technical indicators
+    volatility = self.rolling_vol[self.current_step]
+    
+    return np.concatenate([
+        returns_history, 
+        current_weights, 
+        volatility
+    ])
+\end{verbatim}
+
+\subsubsection{Reward Calculation}
+
+The reward function implementation:
+\begin{verbatim}
+def _calculate_reward(self, portfolio_return):
+    # Base reward: portfolio return
+    reward = portfolio_return
+    
+    # Risk penalty for negative returns
+    if portfolio_return < 0:
+        reward -= self.risk_penalty * (portfolio_return ** 2)
+    
+    # Transaction cost penalty
+    turnover = np.sum(np.abs(
+        self.weights - self.prev_weights
+    ))
+    reward -= self.transaction_cost * turnover
+    
+    return reward
+\end{verbatim}
+
+\subsection{Agent Implementation}
+
+\subsubsection{DDPG Agent}
+
+The DDPG agent uses Stable-Baselines3's implementation with custom hyperparameters:
+
+\begin{verbatim}
+from stable_baselines3 import DDPG
+from stable_baselines3.common.noise import OrnsteinUhlenbeckActionNoise
+
+# Initialize action noise
+n_actions = env.action_space.shape[-1]
+action_noise = OrnsteinUhlenbeckActionNoise(
+    mean=np.zeros(n_actions),
+    sigma=0.1 * np.ones(n_actions)
+)
+
+# Create DDPG agent
+agent = DDPG(
+    "MlpPolicy",
+    env,
+    learning_rate=1e-4,
+    buffer_size=100000,
+    learning_starts=1000,
+    batch_size=128,
+    tau=0.005,
+    gamma=0.99,
+    action_noise=action_noise,
+    policy_kwargs=dict(net_arch=[256, 256]),
+    verbose=1
+)
+\end{verbatim}
+
+\subsubsection{PPO Agent}
+
+The PPO agent configuration:
+
+\begin{verbatim}
+from stable_baselines3 import PPO
+
+agent = PPO(
+    "MlpPolicy",
+    env,
+    learning_rate=3e-4,
+    n_steps=2048,
+    batch_size=64,
+    n_epochs=10,
+    gamma=0.99,
+    gae_lambda=0.95,
+    clip_range=0.2,
+    ent_coef=0.01,
+    policy_kwargs=dict(net_arch=[256, 256]),
+    verbose=1
+)
+\end{verbatim}
+
+\subsection{Options Pricing Module}
+
+The options pricing module implements Black-Scholes formulas:
+
+\begin{verbatim}
+import numpy as np
+from scipy.stats import norm
+
+def black_scholes_put(S, K, T, r, sigma):
+    """Calculate Black-Scholes put option price."""
+    d1 = (np.log(S/K) + (r + sigma**2/2)*T) / (sigma*np.sqrt(T))
+    d2 = d1 - sigma*np.sqrt(T)
+    
+    put_price = K*np.exp(-r*T)*norm.cdf(-d2) - S*norm.cdf(-d1)
+    return put_price
+
+def calculate_hedge_payoff(portfolio_value, hedge_ratio, 
+                           portfolio_return, put_delta):
+    """Calculate options hedge P&L."""
+    if hedge_ratio <= 0:
+        return 0
+    
+    notional = portfolio_value * hedge_ratio
+    # Simplified: hedge gains when portfolio loses
+    hedge_pnl = -notional * portfolio_return * put_delta
+    return hedge_pnl
+\end{verbatim}
+
+\subsection{Metrics Calculation}
+
+Performance metrics are calculated using the \texttt{metrics.py} module:
+
+\begin{verbatim}
+class PerformanceMetrics:
+    @staticmethod
+    def sharpe_ratio(returns, risk_free_rate=0.02):
+        excess_returns = returns - risk_free_rate/252
+        return np.sqrt(252) * excess_returns.mean() / returns.std()
+    
+    @staticmethod
+    def sortino_ratio(returns, risk_free_rate=0.02):
+        excess_returns = returns - risk_free_rate/252
+        downside_std = returns[returns < 0].std()
+        return np.sqrt(252) * excess_returns.mean() / downside_std
+    
+    @staticmethod
+    def max_drawdown(portfolio_values):
+        peak = np.maximum.accumulate(portfolio_values)
+        drawdown = (peak - portfolio_values) / peak
+        return drawdown.max()
+    
+    @staticmethod
+    def calmar_ratio(returns, portfolio_values):
+        annual_return = (1 + returns).prod() ** (252/len(returns)) - 1
+        mdd = PerformanceMetrics.max_drawdown(portfolio_values)
+        return annual_return / mdd if mdd > 0 else 0
+\end{verbatim}
+
+\subsection{Training Pipeline}
+
+The training pipeline orchestrates data loading, environment creation, and agent training:
+
+\begin{verbatim}
+def train_agent(config):
+    # Load data
+    loader = DataLoader(
+        config['tickers'],
+        config['train_start'],
+        config['train_end']
+    )
+    prices, returns = loader.load_data()
+    
+    # Create environment
+    env = PortfolioEnvWithOptions(prices, config)
+    
+    # Create agent
+    if config['algorithm'] == 'DDPG':
+        agent = create_ddpg_agent(env, config)
+    else:
+        agent = create_ppo_agent(env, config)
+    
+    # Train
+    agent.learn(
+        total_timesteps=config['total_timesteps'],
+        callback=TrainingCallback()
+    )
+    
+    # Save model
+    agent.save(f"models/{config['algorithm']}_final")
+    
+    return agent
+\end{verbatim}
+
+\subsection{Evaluation Framework}
+
+The evaluation framework tests trained agents on out-of-sample data:
+
+\begin{verbatim}
+def evaluate_agent(agent, test_env, n_episodes=1):
+    results = {
+        'portfolio_values': [],
+        'actions': [],
+        'rewards': []
+    }
+    
+    for episode in range(n_episodes):
+        obs = test_env.reset()
+        done = False
+        
+        while not done:
+            action, _ = agent.predict(obs, deterministic=True)
+            obs, reward, done, info = test_env.step(action)
+            
+            results['portfolio_values'].append(info['portfolio_value'])
+            results['actions'].append(action)
+            results['rewards'].append(reward)
+    
+    # Calculate metrics
+    metrics = calculate_metrics(results)
+    return results, metrics
+\end{verbatim}
+
+\subsection{Visualization Tools}
+
+The visualization module provides functions for performance analysis:
+
+\begin{verbatim}
+def plot_portfolio_comparison(results_dict, benchmark_values):
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    
+    # Portfolio values
+    for name, values in results_dict.items():
+        axes[0,0].plot(values, label=name)
+    axes[0,0].plot(benchmark_values, label='Benchmark', linestyle='--')
+    axes[0,0].legend()
+    axes[0,0].set_title('Portfolio Value')
+    
+    # Drawdowns
+    for name, values in results_dict.items():
+        dd = calculate_drawdown(values)
+        axes[0,1].fill_between(range(len(dd)), dd, alpha=0.3, label=name)
+    axes[0,1].set_title('Drawdown')
+    
+    # ... additional plots
+    
+    plt.tight_layout()
+    return fig
+\end{verbatim}

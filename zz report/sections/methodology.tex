@@ -1,0 +1,252 @@
+\section{Methodology}
+\label{sec:methodology}
+
+\subsection{Problem Formulation}
+
+We formulate portfolio optimization as a Markov Decision Process (MDP), enabling the application of reinforcement learning algorithms. At each time step $t$, the agent observes market conditions, selects portfolio weights, and receives a reward based on portfolio performance.
+
+\subsubsection{State Space}
+
+The state $s_t \in \mathcal{S}$ captures relevant market information at time $t$:
+
+\begin{equation}
+s_t = \begin{bmatrix}
+\br_{t-L:t}^\top & \text{vol}_{t-L:t}^\top & \bw_{t-1}^\top & \text{features}_t^\top
+\end{bmatrix}
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $\br_{t-L:t} \in \R^{n \times L}$: Historical returns for $n$ assets over lookback window $L$
+    \item $\text{vol}_{t-L:t} \in \R^{n \times L}$: Rolling volatility estimates
+    \item $\bw_{t-1} \in \R^n$: Current portfolio weights
+    \item $\text{features}_t$: Additional technical indicators (momentum, RSI, etc.)
+\end{itemize}
+
+The state representation enables the agent to learn patterns from historical price movements while maintaining awareness of current portfolio positioning.
+
+\subsubsection{Action Space}
+
+The action $\ba_t \in \mathcal{A}$ represents the target portfolio allocation:
+
+\begin{equation}
+\ba_t = \begin{bmatrix} w_1^t & w_2^t & \cdots & w_n^t & h_t \end{bmatrix}
+\end{equation}
+
+Subject to constraints:
+\begin{align}
+\sum_{i=1}^{n} w_i^t &\leq 1 \quad \text{(allocation constraint)} \\
+w_i^t &\geq 0 \quad \forall i \quad \text{(long-only constraint)} \\
+h_t &\in [0, h_{\max}] \quad \text{(hedge ratio constraint)}
+\end{align}
+
+The hedge ratio $h_t$ determines the fraction of portfolio value allocated to protective put options. Any unallocated capital ($1 - \sum_i w_i^t$) earns the risk-free rate.
+
+\subsubsection{Reward Function}
+
+The reward function balances return maximization with risk management. We use a risk-adjusted reward:
+
+\begin{equation}
+r_t = R_t^{\text{port}} - \lambda_{\text{risk}} \cdot \text{Risk}_t - \lambda_{\text{tc}} \cdot \text{TC}_t
+\end{equation}
+
+where:
+
+\textbf{Portfolio Return:}
+\begin{equation}
+R_t^{\text{port}} = \sum_{i=1}^{n} w_i^{t-1} \cdot r_i^t + (1 - \sum_i w_i^{t-1}) \cdot r_f + \Pi_t^{\text{options}}
+\end{equation}
+
+\textbf{Risk Penalty:}
+\begin{equation}
+\text{Risk}_t = \max(0, -R_t^{\text{port}})^2
+\end{equation}
+
+\textbf{Transaction Costs:}
+\begin{equation}
+\text{TC}_t = c \cdot \sum_{i=1}^{n} |w_i^t - w_i^{t-1}|
+\end{equation}
+
+The squared downside penalty encourages the agent to avoid large negative returns, while the transaction cost term discourages excessive trading.
+
+\subsection{Deep Deterministic Policy Gradient (DDPG)}
+
+DDPG is an off-policy actor-critic algorithm designed for continuous action spaces. We employ DDPG with the following components:
+
+\subsubsection{Actor Network}
+
+The actor network $\mu_\theta: \mathcal{S} \rightarrow \mathcal{A}$ maps states to deterministic actions:
+
+\begin{equation}
+\ba_t = \mu_\theta(s_t)
+\end{equation}
+
+Architecture: $\text{State} \rightarrow \text{FC}(256) \rightarrow \text{ReLU} \rightarrow \text{FC}(256) \rightarrow \text{ReLU} \rightarrow \text{FC}(n+1) \rightarrow \text{Softmax}$
+
+The softmax output ensures valid portfolio weights that sum to at most 1.
+
+\subsubsection{Critic Network}
+
+The critic network $Q_\phi: \mathcal{S} \times \mathcal{A} \rightarrow \R$ estimates the Q-value:
+
+\begin{equation}
+Q_\phi(s_t, \ba_t) \approx \E\left[\sum_{k=0}^{\infty} \gamma^k r_{t+k} \mid s_t, \ba_t\right]
+\end{equation}
+
+Architecture: State and action are concatenated after initial state processing:
+\[
+\text{State} \rightarrow \text{FC}(256) \rightarrow \text{ReLU} \rightarrow [\cdot, \ba] \rightarrow \text{FC}(256) \rightarrow \text{ReLU} \rightarrow \text{FC}(1)
+\]
+
+\subsubsection{Training Algorithm}
+
+DDPG training alternates between:
+
+\textbf{Critic Update:} Minimize temporal difference error:
+\begin{equation}
+L(\phi) = \E_{(s,a,r,s') \sim \mathcal{D}} \left[ \left( Q_\phi(s,a) - y \right)^2 \right]
+\end{equation}
+
+where the target is:
+\begin{equation}
+y = r + \gamma Q_{\phi'}(s', \mu_{\theta'}(s'))
+\end{equation}
+
+\textbf{Actor Update:} Maximize expected Q-value via deterministic policy gradient:
+\begin{equation}
+\nabla_\theta J = \E_{s \sim \mathcal{D}} \left[ \nabla_a Q_\phi(s,a)|_{a=\mu_\theta(s)} \cdot \nabla_\theta \mu_\theta(s) \right]
+\end{equation}
+
+\textbf{Target Network Update:} Soft update with parameter $\tau$:
+\begin{align}
+\theta' &\leftarrow \tau \theta + (1-\tau)\theta' \\
+\phi' &\leftarrow \tau \phi + (1-\tau)\phi'
+\end{align}
+
+\subsubsection{Exploration}
+
+Exploration is achieved by adding Ornstein-Uhlenbeck noise to actions:
+\begin{equation}
+\ba_t = \mu_\theta(s_t) + \mathcal{N}_t
+\end{equation}
+
+where $\mathcal{N}_t$ follows:
+\begin{equation}
+d\mathcal{N}_t = \theta_{\text{OU}}(\mu_{\text{OU}} - \mathcal{N}_t)dt + \sigma_{\text{OU}} dW_t
+\end{equation}
+
+\subsection{Proximal Policy Optimization (PPO)}
+
+PPO is an on-policy actor-critic algorithm that achieves stable policy updates through a clipped surrogate objective.
+
+\subsubsection{Policy Network}
+
+The policy network outputs a Gaussian distribution over actions:
+\begin{equation}
+\pi_\theta(\ba|s) = \mathcal{N}(\mu_\theta(s), \sigma_\theta(s))
+\end{equation}
+
+For portfolio weights, actions are sampled and then passed through a softmax transformation to ensure valid allocations.
+
+\subsubsection{Value Network}
+
+The value network $V_\psi: \mathcal{S} \rightarrow \R$ estimates state values:
+\begin{equation}
+V_\psi(s_t) \approx \E_\pi\left[\sum_{k=0}^{\infty} \gamma^k r_{t+k} \mid s_t\right]
+\end{equation}
+
+\subsubsection{Clipped Surrogate Objective}
+
+PPO optimizes a clipped surrogate objective:
+\begin{equation}
+L^{\text{CLIP}}(\theta) = \E_t \left[ \min\left( r_t(\theta) \hat{A}_t, \text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon) \hat{A}_t \right) \right]
+\end{equation}
+
+where the probability ratio is:
+\begin{equation}
+r_t(\theta) = \frac{\pi_\theta(\ba_t|s_t)}{\pi_{\theta_{\text{old}}}(\ba_t|s_t)}
+\end{equation}
+
+\subsubsection{Generalized Advantage Estimation (GAE)}
+
+Advantages are estimated using GAE \cite{schulman2015gae}:
+\begin{equation}
+\hat{A}_t = \sum_{l=0}^{\infty} (\gamma \lambda)^l \delta_{t+l}
+\end{equation}
+
+where the TD residual is:
+\begin{equation}
+\delta_t = r_t + \gamma V_\psi(s_{t+1}) - V_\psi(s_t)
+\end{equation}
+
+\subsubsection{Complete Objective}
+
+The full PPO objective combines policy, value, and entropy terms:
+\begin{equation}
+L(\theta, \psi) = L^{\text{CLIP}}(\theta) - c_1 L^{VF}(\psi) + c_2 S[\pi_\theta]
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $L^{VF}(\psi) = \E_t[(V_\psi(s_t) - V_t^{\text{target}})^2]$ is the value function loss
+    \item $S[\pi_\theta] = \E_t[-\log \pi_\theta(\ba_t|s_t)]$ is the entropy bonus for exploration
+\end{itemize}
+
+\subsection{Options Pricing and Hedging}
+
+\subsubsection{Black-Scholes Model}
+
+We use the Black-Scholes model for options pricing. For a European put option:
+
+\begin{align}
+P &= K e^{-rT} N(-d_2) - S_0 N(-d_1) \\
+d_1 &= \frac{\ln(S_0/K) + (r + \sigma^2/2)T}{\sigma\sqrt{T}} \\
+d_2 &= d_1 - \sigma\sqrt{T}
+\end{align}
+
+where:
+\begin{itemize}
+    \item $S_0$: Current asset price
+    \item $K$: Strike price
+    \item $r$: Risk-free interest rate
+    \item $T$: Time to expiration
+    \item $\sigma$: Implied volatility
+    \item $N(\cdot)$: Cumulative standard normal distribution
+\end{itemize}
+
+\subsubsection{Protective Put Strategy}
+
+The agent can allocate a hedge ratio $h_t$ to protective puts on the portfolio. The put payoff at expiration is:
+
+\begin{equation}
+\Pi_t^{\text{put}} = h_t \cdot V_t \cdot \max\left(0, \frac{K - S_T}{S_0}\right) - P_0
+\end{equation}
+
+This provides portfolio insurance: when the portfolio declines below the strike price, the put option compensates for losses.
+
+\subsection{Stop-Loss Mechanism}
+
+We implement a tiered stop-loss system that reduces portfolio exposure as drawdowns deepen:
+
+\begin{equation}
+\text{Exposure Multiplier} = 
+\begin{cases}
+1.0 & \text{if } DD_t < 5\% \\
+0.75 & \text{if } 5\% \leq DD_t < 10\% \\
+0.50 & \text{if } 10\% \leq DD_t < 15\% \\
+0.25 & \text{if } DD_t \geq 15\%
+\end{cases}
+\end{equation}
+
+where the drawdown is:
+\begin{equation}
+DD_t = \frac{V_t^{\text{peak}} - V_t}{V_t^{\text{peak}}}
+\end{equation}
+
+This mechanism provides systematic risk control by:
+\begin{enumerate}
+    \item Allowing full participation during normal market conditions
+    \item Progressively reducing exposure as losses accumulate
+    \item Preserving capital during severe drawdowns
+    \item Enabling participation in recovery through maintained (reduced) exposure
+\end{enumerate}

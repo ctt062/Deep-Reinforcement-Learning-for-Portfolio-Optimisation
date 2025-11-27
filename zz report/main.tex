@@ -1,0 +1,201 @@
+%==============================================================================
+% Deep Reinforcement Learning for Portfolio Optimization
+% Main Document - IEDA4000F Final Project Report
+%==============================================================================
+
+\documentclass[12pt, a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{setspace}
+\usepackage[numbers]{natbib}
+\usepackage{appendix}
+\usepackage{multirow}
+
+% Page setup
+\geometry{margin=1in, headheight=15pt}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{positioning, arrows.meta, shapes.geometric}
+
+% Hyperlink setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,
+    urlcolor=cyan,
+    citecolor=green!50!black
+}
+
+% Header/Footer
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{DRL Portfolio Optimization}
+\lhead{IEDA4000F}
+\rfoot{Page \thepage}
+
+% Code listing style
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    showstringspaces=false,
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{gray!10}
+}
+
+% Custom commands
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\bw}{\mathbf{w}}
+\newcommand{\br}{\mathbf{r}}
+\newcommand{\bs}{\mathbf{s}}
+\newcommand{\ba}{\mathbf{a}}
+
+%==============================================================================
+\begin{document}
+%==============================================================================
+
+% Title Page
+\begin{titlepage}
+\centering
+\vspace*{2cm}
+{\Huge\bfseries Deep Reinforcement Learning for Portfolio Optimization with Options Hedging\par}
+\vspace{1.5cm}
+{\Large\itshape IEDA4000F Final Project Report\par}
+\vspace{2cm}
+{\large CHONG Tin Tak\par}
+{\large 20920359\par}
+\vspace{1cm}
+{\large Department of Industrial Engineering and Decision Analytics\par}
+{\large The Hong Kong University of Science and Technology\par}
+\vfill
+{\large \today\par}
+\end{titlepage}
+
+% Abstract
+\begin{abstract}
+This project investigates the application of Deep Reinforcement Learning (DRL) to portfolio optimization with integrated options hedging and systematic risk management. We implement and compare two state-of-the-art algorithms---Deep Deterministic Policy Gradient (DDPG) and Proximal Policy Optimization (PPO)---for continuous portfolio weight allocation across 18 diversified assets spanning eight market sectors.
+
+Our framework incorporates Black-Scholes options pricing for dynamic hedging and a tiered stop-loss mechanism for systematic downside protection. Training on 2010-2018 market data and testing on 2019-2020 (including the COVID-19 market crash), we find that DDPG significantly outperforms PPO with a Sharpe ratio of 5.52 versus 1.85, achieving 219\% total return while limiting maximum drawdown to just 8.31\% compared to the market's 34\% decline.
+
+DDPG's superior performance stems from its off-policy learning capability and deterministic policy output, which proves advantageous for the portfolio allocation task. The agent learned effective hedging strategies, generating \$126,568 in options profits during the test period. These results demonstrate the practical potential of DRL-based portfolio management for navigating both normal market conditions and tail risk events.
+
+\textbf{Keywords:} Deep Reinforcement Learning, Portfolio Optimization, DDPG, PPO, Options Hedging, Risk Management, COVID-19
+\end{abstract}
+
+\newpage
+\tableofcontents
+\newpage
+\listoffigures
+\listoftables
+\newpage
+
+% Main Sections
+\input{sections/introduction}
+\input{sections/literature}
+\input{sections/methodology}
+\input{sections/implementation}
+\input{sections/experiments}
+\input{sections/results}
+\input{sections/discussion}
+\input{sections/conclusion}
+
+% References
+\newpage
+\bibliographystyle{plainnat}
+\begin{thebibliography}{99}
+
+\bibitem{markowitz1952}
+Markowitz, H. (1952).
+\newblock Portfolio Selection.
+\newblock {\em The Journal of Finance}, 7(1):77--91.
+
+\bibitem{black1973}
+Black, F. and Scholes, M. (1973).
+\newblock The Pricing of Options and Corporate Liabilities.
+\newblock {\em Journal of Political Economy}, 81(3):637--654.
+
+\bibitem{black1992}
+Black, F. and Litterman, R. (1992).
+\newblock Global Portfolio Optimization.
+\newblock {\em Financial Analysts Journal}, 48(5):28--43.
+
+\bibitem{michaud1989}
+Michaud, R.O. (1989).
+\newblock The Markowitz Optimization Enigma: Is `Optimized' Optimal?
+\newblock {\em Financial Analysts Journal}, 45(1):31--42.
+
+\bibitem{goldfarb2003}
+Goldfarb, D. and Iyengar, G. (2003).
+\newblock Robust Portfolio Selection Problems.
+\newblock {\em Mathematics of Operations Research}, 28(1):1--38.
+
+\bibitem{sutton2018}
+Sutton, R.S. and Barto, A.G. (2018).
+\newblock {\em Reinforcement Learning: An Introduction}.
+\newblock MIT Press, second edition.
+
+\bibitem{lillicrap2015}
+Lillicrap, T.P., et al. (2015).
+\newblock Continuous Control with Deep Reinforcement Learning.
+\newblock {\em arXiv preprint arXiv:1509.02971}.
+
+\bibitem{schulman2017}
+Schulman, J., et al. (2017).
+\newblock Proximal Policy Optimization Algorithms.
+\newblock {\em arXiv preprint arXiv:1707.06347}.
+
+\bibitem{schulman2015gae}
+Schulman, J., et al. (2015).
+\newblock High-Dimensional Continuous Control Using Generalized Advantage Estimation.
+\newblock {\em arXiv preprint arXiv:1506.02438}.
+
+\bibitem{jiang2017}
+Jiang, Z., Xu, D., and Liang, J. (2017).
+\newblock A Deep Reinforcement Learning Framework for the Financial Portfolio Management Problem.
+\newblock {\em arXiv preprint arXiv:1706.10059}.
+
+\bibitem{liang2018}
+Liang, Z., et al. (2018).
+\newblock Adversarial Deep Reinforcement Learning in Portfolio Management.
+\newblock {\em arXiv preprint arXiv:1808.09940}.
+
+\bibitem{yang2020}
+Yang, H., et al. (2020).
+\newblock Deep Reinforcement Learning for Automated Stock Trading: An Ensemble Strategy.
+\newblock {\em ACM International Conference on AI in Finance}.
+
+\bibitem{liu2021}
+Liu, X.Y., et al. (2021).
+\newblock FinRL: A Deep Reinforcement Learning Library for Automated Stock Trading in Quantitative Finance.
+\newblock {\em NeurIPS Workshop on Deep RL}.
+
+\end{thebibliography}
+
+% Appendices
+\newpage
+\appendix
+\input{appendices/formulas}
+\input{appendices/config}
+
+\end{document}

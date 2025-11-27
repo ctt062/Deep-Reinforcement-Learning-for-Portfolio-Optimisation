@@ -1,0 +1,74 @@
+\section{Introduction}
+\label{sec:introduction}
+
+\subsection{Background and Motivation}
+
+Portfolio optimization has been a cornerstone of modern finance since Harry Markowitz's seminal work on mean-variance optimization in 1952 \cite{markowitz1952}. Traditional approaches rely on statistical estimates of expected returns and covariances, which often prove unstable in practice due to estimation errors that compound over time. These classical methods also struggle to adapt to non-stationary market dynamics and fail to capture complex nonlinear relationships between assets.
+
+The financial markets of the 21st century present unique challenges that expose the limitations of traditional portfolio management approaches:
+
+\begin{itemize}
+    \item \textbf{Market Complexity}: Modern markets exhibit intricate dependencies, regime changes, and fat-tailed return distributions that violate the Gaussian assumptions underlying classical models.
+    
+    \item \textbf{High-Frequency Dynamics}: Rapid information dissemination and algorithmic trading create fast-moving market conditions that require adaptive strategies.
+    
+    \item \textbf{Tail Risk Events}: Events like the 2008 financial crisis and the COVID-19 market crash of 2020 demonstrate the importance of robust risk management beyond traditional volatility measures.
+    
+    \item \textbf{Transaction Costs and Constraints}: Real-world portfolio management must account for transaction costs, position limits, and regulatory constraints that classical models often ignore.
+\end{itemize}
+
+Deep Reinforcement Learning (DRL) offers a promising alternative framework for portfolio optimization. By framing portfolio management as a sequential decision-making problem, DRL agents can learn adaptive strategies directly from market data without relying on explicit statistical models. Recent advances in deep learning provide the representational capacity to capture complex market patterns, while reinforcement learning algorithms enable optimization of long-term risk-adjusted returns.
+
+\subsection{Research Objectives}
+
+This project investigates the application of Deep Reinforcement Learning to portfolio optimization with the following primary objectives:
+
+\begin{enumerate}
+    \item \textbf{Algorithm Comparison}: Implement and compare two state-of-the-art DRL algorithms—Deep Deterministic Policy Gradient (DDPG) and Proximal Policy Optimization (PPO)—for continuous portfolio weight allocation.
+    
+    \item \textbf{Options Integration}: Develop a novel framework for incorporating options-based hedging strategies within the DRL portfolio optimization environment, enabling dynamic downside protection.
+    
+    \item \textbf{Risk Management}: Design and evaluate a multi-tiered stop-loss system that adapts portfolio exposure based on drawdown levels, providing systematic risk control.
+    
+    \item \textbf{Stress Testing}: Evaluate the trained agents' performance during extreme market conditions, specifically the COVID-19 market crash of March 2020, to assess robustness and crisis-alpha generation.
+    
+    \item \textbf{Reproducibility}: Create a comprehensive, well-documented codebase that enables reproduction and extension of our results.
+\end{enumerate}
+
+\subsection{Key Contributions}
+
+This work makes the following contributions to the field of algorithmic portfolio management:
+
+\begin{enumerate}
+    \item \textbf{Integrated Options Hedging}: We develop a novel portfolio environment that integrates Black-Scholes options pricing with DRL-based portfolio optimization, allowing agents to learn when and how much to hedge using put options.
+    
+    \item \textbf{Adaptive Stop-Loss Mechanism}: We implement a tiered stop-loss system that progressively reduces portfolio exposure as drawdowns deepen, providing systematic downside protection while allowing participation in market recoveries.
+    
+    \item \textbf{Comprehensive Benchmark Study}: We conduct extensive experiments comparing DDPG and PPO across multiple performance dimensions, including risk-adjusted returns, drawdown characteristics, and behavior during market stress.
+    
+    \item \textbf{COVID-19 Stress Test}: We specifically evaluate model performance during the March 2020 market crash, demonstrating the practical value of DRL-based portfolio management during tail risk events.
+    
+    \item \textbf{Open-Source Implementation}: We provide a complete, modular implementation suitable for research and practical applications, including data loading, environment simulation, agent training, and performance visualization.
+\end{enumerate}
+
+\subsection{Report Structure}
+
+The remainder of this report is organized as follows:
+
+\begin{itemize}
+    \item \textbf{Section \ref{sec:literature}}: Reviews related work in portfolio optimization, reinforcement learning for finance, and options-based hedging strategies.
+    
+    \item \textbf{Section \ref{sec:methodology}}: Presents the mathematical framework, including the MDP formulation, reward function design, and the DDPG and PPO algorithms.
+    
+    \item \textbf{Section \ref{sec:implementation}}: Describes the system architecture, code structure, and implementation details.
+    
+    \item \textbf{Section \ref{sec:experiments}}: Details the experimental setup, including asset selection, data preprocessing, and hyperparameter configurations.
+    
+    \item \textbf{Section \ref{sec:results}}: Presents comprehensive results comparing DDPG and PPO performance across multiple metrics.
+    
+    \item \textbf{Section \ref{sec:discussion}}: Analyzes the results, discusses the strengths and limitations of each approach, and provides insights into the learned strategies.
+    
+    \item \textbf{Section \ref{sec:conclusion}}: Summarizes our findings and outlines directions for future research.
+\end{itemize}
+
+Appendices provide detailed mathematical formulas (Appendix \ref{app:formulas}) and configuration parameters (Appendix \ref{app:config}).
