@@ -52,9 +52,7 @@ def load_drawdowns(agent_name):
     
     with open(dd_file, 'r') as f:
         data = json.load(f)
-        # Handle both 'drawdowns' and 'values' keys
-        drawdown_key = 'drawdowns' if 'drawdowns' in data else 'values'
-        return np.array(data['dates']), np.array(data[drawdown_key])
+        return np.array(data['dates']), np.array(data['drawdowns'])
 
 def plot_sharpe_comparison(metrics_dict):
     """Plot 1: Sharpe Ratio Comparison"""
@@ -101,7 +99,7 @@ def plot_all_metrics_comparison(metrics_dict):
         ('total_return', 'Total Return (%)', 15.0, 'Target: 15%'),
         ('max_drawdown', 'Max Drawdown (%)', 10.0, 'Target: <10%'),
         ('volatility', 'Volatility (%)', None, None),
-        ('turnover', 'Portfolio Turnover', None, None),
+        ('average_turnover', 'Portfolio Turnover', None, None),
         ('annualized_return', 'Annualized Return (%)', None, None)
     ]
     
@@ -145,11 +143,6 @@ def plot_cumulative_values(values_dict):
     for agent in values_dict.keys():
         dates, values = values_dict[agent]
         
-        # Align dates and values - take minimum length
-        min_len = min(len(dates), len(values))
-        dates = dates[:min_len]
-        values = values[:min_len]
-        
         # Normalize to start at $100,000
         normalized_values = values / values[0] * 100000
         
@@ -191,11 +184,6 @@ def plot_drawdowns(drawdown_dict):
     for agent in drawdown_dict.keys():
         dates, drawdowns = drawdown_dict[agent]
         
-        # Align dates and drawdowns - take minimum length
-        min_len = min(len(dates), len(drawdowns))
-        dates = dates[:min_len]
-        drawdowns = drawdowns[:min_len]
-        
         # Drawdowns are already in percentage format from the JSON
         drawdowns_pct = drawdowns
         
@@ -219,12 +207,6 @@ def plot_drawdowns(drawdown_dict):
     # Fill areas
     for agent in drawdown_dict.keys():
         dates, drawdowns = drawdown_dict[agent]
-        
-        # Align dates and drawdowns - take minimum length
-        min_len = min(len(dates), len(drawdowns))
-        dates = dates[:min_len]
-        drawdowns = drawdowns[:min_len]
-        
         drawdowns_pct = -drawdowns  # Already in percentage
         ax.fill_between(range(len(dates)), drawdowns_pct, 0, 
                         color=colors[agent], alpha=0.1)

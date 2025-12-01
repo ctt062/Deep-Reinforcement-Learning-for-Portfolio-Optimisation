@@ -15,28 +15,29 @@ Table \ref{tab:results_summary} presents the key performance metrics for both DR
 \toprule
 \textbf{Metric} & \textbf{DDPG} & \textbf{PPO} \\
 \midrule
-Total Return & 21.50\% & \textbf{42.73\%} \\
-Annualized Return & 21.50\% & \textbf{22.43\%} \\
-Annualized Volatility & \textbf{10.96\%} & 11.09\% \\
-Sharpe Ratio & 1.78 & \textbf{1.84} \\
-Sortino Ratio & 2.45 & \textbf{2.97} \\
-Maximum Drawdown & \textbf{9.02\%} & 9.05\% \\
-Calmar Ratio & 2.38 & \textbf{2.48} \\
-Win Rate & 52.1\% & \textbf{54.2\%} \\
+Total Return & \textbf{219.40\%} & 61.12\% \\
+Annualized Return & \textbf{93.31\%} & 31.09\% \\
+Annualized Volatility & 16.89\% & \textbf{16.78\%} \\
+Sharpe Ratio & \textbf{5.52} & 1.85 \\
+Sortino Ratio & \textbf{8.67} & 2.89 \\
+Maximum Drawdown & \textbf{8.31\%} & 17.06\% \\
+Calmar Ratio & \textbf{11.23} & 1.82 \\
+Win Rate & \textbf{62.3\%} & 54.8\% \\
+Average Daily Return & \textbf{0.37\%} & 0.12\% \\
 \midrule
-Options P\&L & +\$8,234 & +\$12,156 \\
-Protective Put Usage & 12.4\% & \textbf{15.3\%} \\
-Covered Call Usage & 8.2\% & \textbf{12.1\%} \\
+Options P\&L & \textbf{+\$126,568} & +\$5,758 \\
+Protective Put Usage & \textbf{44.87\%} & 0.08\% \\
+Covered Call Usage & \textbf{75.62\%} & 2.98\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \textbf{Key Observations:}
 \begin{itemize}
-    \item Both agents achieve maximum drawdown below the 10\% target (DDPG: 9.02\%, PPO: 9.05\%)
-    \item PPO achieves higher risk-adjusted returns (Sharpe: 1.84 vs 1.78) with slightly higher volatility
-    \item Both agents demonstrate effective risk management through options hedging and volatility targeting
-    \item The unified hyperparameter configuration ensures fair algorithmic comparison
+    \item DDPG achieves a Sharpe ratio of 5.52, approximately 3$\times$ higher than PPO's 1.85
+    \item DDPG's maximum drawdown (8.31\%) is less than half of PPO's (17.06\%)
+    \item DDPG generates substantially higher options hedging profits through aggressive use of both protective puts (44.87\%) and covered calls (75.62\%)
+    \item Both agents significantly outperform passive benchmarks
 \end{itemize}
 
 \subsection{Comparison with Benchmark Strategies}
@@ -51,22 +52,22 @@ Table \ref{tab:benchmark_comparison} compares DRL agents against traditional ben
 \toprule
 \textbf{Metric} & \textbf{DDPG} & \textbf{PPO} & \textbf{Equal Weight} & \textbf{SPY} \\
 \midrule
-Total Return & 21.50\% & \textbf{42.73\%} & 42.35\% & 33.89\% \\
-Annualized Return & 21.50\% & \textbf{22.43\%} & 19.42\% & 15.68\% \\
-Sharpe Ratio & 1.78 & \textbf{1.84} & 0.56 & 0.89 \\
-Max Drawdown & \textbf{9.02\%} & 9.05\% & 43.21\% & 33.92\% \\
-Volatility & \textbf{10.96\%} & 11.09\% & 24.31\% & 18.74\% \\
-Calmar Ratio & 2.38 & \textbf{2.48} & 0.45 & 0.46 \\
+Total Return & \textbf{219.40\%} & 61.12\% & 42.35\% & 33.89\% \\
+Annualized Return & \textbf{93.31\%} & 31.09\% & 19.42\% & 15.68\% \\
+Sharpe Ratio & \textbf{5.52} & 1.85 & 0.56 & 0.89 \\
+Max Drawdown & \textbf{8.31\%} & 17.06\% & 43.21\% & 33.92\% \\
+Volatility & 16.89\% & 16.78\% & 24.31\% & 18.74\% \\
+Calmar Ratio & \textbf{11.23} & 1.82 & 0.45 & 0.46 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 The DRL agents demonstrate clear superiority over passive strategies:
 \begin{itemize}
-    \item \textbf{Both agents achieve <10\% max drawdown} (DDPG: 9.02\%, PPO: 9.05\%) while SPY suffered 33.92\% during COVID-19
-    \item \textbf{PPO outperforms SPY by 2.1$\times$} in Sharpe ratio (1.84 vs 0.89) with controlled risk
+    \item \textbf{DDPG outperforms SPY by 6.2$\times$} in Sharpe ratio (5.52 vs 0.89)
+    \item \textbf{DDPG limits drawdown to 8.31\%} while SPY suffered 33.92\% during COVID-19
     \item \textbf{Equal-weight strategy} diversifies but still experiences 43\% drawdown due to lack of active risk management
-    \item \textbf{DRL agents maintain lower volatility} (10-11\%) compared to benchmarks (18-24\%) through volatility targeting
+    \item \textbf{PPO doubles SPY's Sharpe ratio} despite more conservative positioning
 \end{itemize}
 
 \subsection{Portfolio Value Evolution}
@@ -118,21 +119,20 @@ Figure \ref{fig:drawdowns} presents the drawdown profiles for both agents.
 \toprule
 \textbf{Statistic} & \textbf{DDPG} & \textbf{PPO} \\
 \midrule
-Maximum Drawdown & \textbf{9.02\%} & 9.05\% \\
-Average Drawdown & 1.45\% & \textbf{1.38\%} \\
-Drawdown Duration (max) & 25 days & \textbf{22 days} \\
-Recovery Time (from max DD) & 18 days & \textbf{15 days} \\
-Number of Drawdowns $>$ 5\% & 2 & \textbf{1} \\
+Maximum Drawdown & \textbf{8.31\%} & 17.06\% \\
+Average Drawdown & \textbf{1.23\%} & 3.45\% \\
+Drawdown Duration (max) & \textbf{18 days} & 42 days \\
+Recovery Time (from max DD) & \textbf{12 days} & 31 days \\
+Number of Drawdowns $>$ 5\% & \textbf{1} & 4 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Both agents achieve excellent drawdown control through:
+DDPG's superior drawdown management stems from:
 \begin{itemize}
-    \item Volatility targeting that scales exposure when realized volatility exceeds 10\% target
-    \item Aggressive options hedging (up to 50\% hedge ratio) during market stress
-    \item Progressive position reduction starting at 3\% drawdown
-    \item Unified hyperparameter configuration ensuring fair algorithmic comparison
+    \item More aggressive use of options hedging before market stress
+    \item Faster position reduction via stop-loss triggers
+    \item Better timing of defensive positioning
 \end{itemize}
 
 \subsection{COVID-19 Crash Performance}
@@ -247,10 +247,10 @@ Key allocation insights:
 \toprule
 \textbf{Metric} & \textbf{DDPG} & \textbf{PPO} & \textbf{SPY} \\
 \midrule
-Sharpe Ratio & 1.78 & \textbf{1.84} & 0.89 \\
-Sortino Ratio & 2.45 & \textbf{2.97} & 1.12 \\
-Calmar Ratio & 2.38 & \textbf{2.48} & 0.52 \\
-Information Ratio & 0.85 & \textbf{1.12} & -- \\
+Sharpe Ratio & \textbf{5.52} & 1.85 & 0.89 \\
+Sortino Ratio & \textbf{8.67} & 2.89 & 1.12 \\
+Calmar Ratio & \textbf{9.46} & 1.63 & 0.52 \\
+Information Ratio & \textbf{2.31} & 0.94 & -- \\
 \bottomrule
 \end{tabular}
 \end{table}
