@@ -77,7 +77,9 @@ def calculate_metrics(results):
     total_return = (portfolio_values[-1] / portfolio_values[0] - 1) * 100
     annualized_return = ((portfolio_values[-1] / portfolio_values[0]) ** (252 / len(portfolio_values)) - 1) * 100
     volatility = np.std(returns) * np.sqrt(252) * 100
-    sharpe_ratio = (annualized_return / volatility) if volatility > 0 else 0
+    # FIXED: Sharpe ratio should subtract risk-free rate (2% = 2 in percentage terms)
+    risk_free_rate = 2.0  # 2% annual
+    sharpe_ratio = ((annualized_return - risk_free_rate) / volatility) if volatility > 0 else 0
     
     # Drawdown
     cummax = np.maximum.accumulate(portfolio_values)

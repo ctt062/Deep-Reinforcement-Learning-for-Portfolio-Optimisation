@@ -49,7 +49,7 @@ environment:
   max_leverage: 1.0
   slippage: 0.0
   reward_type: risk_adjusted
-  risk_penalty_lambda: 0.8  # DDPG V2 optimal value
+  risk_penalty_lambda: 5.0  # Increased for lower drawdown (<10% target)
   volatility_window: 60
   risk_free_rate: 0.02
   turnover_penalty: 0.0005
@@ -64,23 +64,23 @@ options:
   enabled: true
   protective_puts:
     enabled: true
-    max_hedge_ratio: 0.25
-    strike_pct: 0.96
+    max_hedge_ratio: 0.50    # INCREASED from 0.25 - more tail risk hedging
+    strike_pct: 0.97         # Closer to ATM for better protection
     expiry_days: 30
     cost_factor: 0.015
   covered_calls:
     enabled: true
-    max_coverage_ratio: 0.25
-    strike_pct: 1.04
+    max_coverage_ratio: 0.35  # Slightly increased for more premium income
+    strike_pct: 1.03         # Closer to ATM
     expiry_days: 30
     premium_factor: 0.015
 
 agents:
   ddpg:
-    # DDPG V2 winner configuration
+    # DDPG configuration - SAME learning_rate and batch_size as PPO
     policy: MlpPolicy
-    learning_rate: 1.0e-04
-    batch_size: 256
+    learning_rate: 5.0e-05  # Same as PPO for fair comparison
+    batch_size: 128         # Same as PPO for fair comparison
     buffer_size: 500000
     learning_starts: 10000
     gamma: 0.99
@@ -92,25 +92,25 @@ agents:
       pi: [512, 512, 256, 128]
       qf: [512, 512, 256, 128]
     # Agent-specific environment parameters
-    risk_penalty_lambda: 0.8
+    risk_penalty_lambda: 5.0  # Increased for lower drawdown
     turnover_penalty: 0.0005
   
   ppo:
-    # PPO V1 configuration (better than V3)
+    # PPO configuration - SAME learning_rate and batch_size as DDPG
     policy: MlpPolicy
-    learning_rate: 5.0e-05
+    learning_rate: 5.0e-05  # Same as DDPG for fair comparison
     n_steps: 2048
-    batch_size: 128
+    batch_size: 128         # Same as DDPG for fair comparison
     n_epochs: 10
     gamma: 0.99
     gae_lambda: 0.95
     clip_range: 0.2
-    ent_coef: 0.05
+    ent_coef: 0.01          # REDUCED from 0.05 - less exploration, more conservative
     vf_coef: 0.5
     max_grad_norm: 0.5
     network_arch: [512, 512, 256, 128]
     # Agent-specific environment parameters
-    risk_penalty_lambda: 1.0
+    risk_penalty_lambda: 5.0  # Increased for lower drawdown
     turnover_penalty: 0.0005
 
 training:
