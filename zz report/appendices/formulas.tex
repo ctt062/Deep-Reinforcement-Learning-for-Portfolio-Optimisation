@@ -222,7 +222,25 @@ C - P = S_0 - K e^{-rT}
 
 \subsubsection{Protective Put Payoff}
 \begin{equation}
-\Pi_{\text{protective}} = S_T + \max(K - S_T, 0) - P_0 = \max(S_T, K) - P_0
+\Pi_{\text{protective put}} = S_T + \max(K_{\text{put}} - S_T, 0) - P_0 = \max(S_T, K_{\text{put}}) - P_0
+\end{equation}
+
+\subsubsection{Covered Call Payoff}
+\begin{equation}
+\Pi_{\text{covered call}} = S_T - \max(S_T - K_{\text{call}}, 0) + C_0 = \min(S_T, K_{\text{call}}) + C_0
+\end{equation}
+
+\subsubsection{Collar Strategy Payoff}
+The collar combines protective puts and covered calls:
+\begin{equation}
+\Pi_{\text{collar}} = S_T + \max(K_{\text{put}} - S_T, 0) - \max(S_T - K_{\text{call}}, 0) - P_0 + C_0
+\end{equation}
+
+This bounds the portfolio value between $K_{\text{put}}$ and $K_{\text{call}}$.
+
+\subsubsection{Total Options P\&L}
+\begin{equation}
+\Pi_{\text{options}} = h^{\text{put}} \cdot V_t \cdot \frac{\max(K_{\text{put}} - S_T, 0)}{S_0} - P_0 + C_0 - h^{\text{call}} \cdot V_t \cdot \frac{\max(S_T - K_{\text{call}}, 0)}{S_0}
 \end{equation}
 
 \subsection{Stop-Loss Mechanism}

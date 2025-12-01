@@ -188,6 +188,27 @@ For practitioners considering DRL-based portfolio management:
     \item Regular model retraining may be necessary as market dynamics evolve
 \end{itemize}
 
+\subsection{Asset Correlation Analysis}
+
+Figure \ref{fig:correlation} shows the correlation structure of our asset universe during the training period (2010-2018).
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/correlation_matrix.png}
+\caption{Asset correlation matrix computed from training period data (2010-2018). Technology stocks show high intra-sector correlation, while bonds (TLT, AGG) provide diversification benefits through low/negative correlation with equities.}
+\label{fig:correlation}
+\end{figure}
+
+Key observations from the correlation structure:
+\begin{itemize}
+    \item \textbf{Technology Cluster}: AAPL, MSFT, GOOGL, NVDA, AMZN show correlations of 0.6-0.8, limiting diversification within sector
+    \item \textbf{Bond Diversification}: TLT and AGG have near-zero or negative correlations with equities, providing true diversification
+    \item \textbf{Gold Hedge}: GLD shows low correlation ($\sim$0.1-0.2) with most assets, serving as a crisis hedge
+    \item \textbf{Index Correlation}: SPY, QQQ, and IWM are highly correlated with individual stocks, providing less diversification than expected
+\end{itemize}
+
+The DRL agents learned to exploit these correlation patterns---DDPG's shift to bonds during the COVID-19 crash demonstrates understanding of the negative correlation between bonds and equities during risk-off periods.
+
 \subsection{Comparison with Literature}
 
 Our results are consistent with findings in the literature:

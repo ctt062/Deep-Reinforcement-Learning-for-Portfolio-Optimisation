@@ -169,18 +169,20 @@ action_noise = OrnsteinUhlenbeckActionNoise(
     sigma=0.1 * np.ones(n_actions)
 )
 
-# Create DDPG agent
+# Create DDPG agent (final benchmark configuration)
 agent = DDPG(
     "MlpPolicy",
     env,
     learning_rate=1e-4,
-    buffer_size=100000,
-    learning_starts=1000,
-    batch_size=128,
-    tau=0.005,
+    buffer_size=500000,
+    learning_starts=10000,
+    batch_size=256,
+    tau=0.01,
     gamma=0.99,
     action_noise=action_noise,
-    policy_kwargs=dict(net_arch=[256, 256]),
+    policy_kwargs=dict(
+        net_arch=dict(pi=[512, 512, 256, 128], qf=[512, 512, 256, 128])
+    ),
     verbose=1
 )
 \end{verbatim}
@@ -195,15 +197,15 @@ from stable_baselines3 import PPO
 agent = PPO(
     "MlpPolicy",
     env,
-    learning_rate=3e-4,
+    learning_rate=5e-5,
     n_steps=2048,
-    batch_size=64,
+    batch_size=128,
     n_epochs=10,
     gamma=0.99,
     gae_lambda=0.95,
     clip_range=0.2,
-    ent_coef=0.01,
-    policy_kwargs=dict(net_arch=[256, 256]),
+    ent_coef=0.05,
+    policy_kwargs=dict(net_arch=[512, 512, 256, 128]),
     verbose=1
 )
 \end{verbatim}

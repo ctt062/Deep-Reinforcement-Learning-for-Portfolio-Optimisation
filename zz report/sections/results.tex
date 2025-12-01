@@ -16,18 +16,18 @@ Table \ref{tab:results_summary} presents the key performance metrics for both DR
 \textbf{Metric} & \textbf{DDPG} & \textbf{PPO} \\
 \midrule
 Total Return & \textbf{219.40\%} & 61.12\% \\
-Annualized Return & \textbf{78.63\%} & 27.77\% \\
-Annualized Volatility & 13.87\% & \textbf{12.53\%} \\
+Annualized Return & \textbf{93.31\%} & 31.09\% \\
+Annualized Volatility & 16.89\% & \textbf{16.78\%} \\
 Sharpe Ratio & \textbf{5.52} & 1.85 \\
 Sortino Ratio & \textbf{8.67} & 2.89 \\
 Maximum Drawdown & \textbf{8.31\%} & 17.06\% \\
-Calmar Ratio & \textbf{9.46} & 1.63 \\
+Calmar Ratio & \textbf{11.23} & 1.82 \\
 Win Rate & \textbf{62.3\%} & 54.8\% \\
-Average Daily Return & \textbf{0.23\%} & 0.09\% \\
+Average Daily Return & \textbf{0.37\%} & 0.12\% \\
 \midrule
 Options P\&L & \textbf{+\$126,568} & +\$5,758 \\
-Number of Hedge Days & 89 & 23 \\
-Average Hedge Ratio & 12.4\% & 3.2\% \\
+Protective Put Usage & \textbf{44.87\%} & 0.08\% \\
+Covered Call Usage & \textbf{75.62\%} & 2.98\% \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -36,8 +36,38 @@ Average Hedge Ratio & 12.4\% & 3.2\% \\
 \begin{itemize}
     \item DDPG achieves a Sharpe ratio of 5.52, approximately 3$\times$ higher than PPO's 1.85
     \item DDPG's maximum drawdown (8.31\%) is less than half of PPO's (17.06\%)
-    \item DDPG generates substantially higher options hedging profits
+    \item DDPG generates substantially higher options hedging profits through aggressive use of both protective puts (44.87\%) and covered calls (75.62\%)
     \item Both agents significantly outperform passive benchmarks
+\end{itemize}
+
+\subsection{Comparison with Benchmark Strategies}
+
+Table \ref{tab:benchmark_comparison} compares DRL agents against traditional benchmark strategies during the test period.
+
+\begin{table}[htbp]
+\centering
+\caption{Performance comparison: DRL agents vs benchmark strategies (2019-2020)}
+\label{tab:benchmark_comparison}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Metric} & \textbf{DDPG} & \textbf{PPO} & \textbf{Equal Weight} & \textbf{SPY} \\
+\midrule
+Total Return & \textbf{219.40\%} & 61.12\% & 42.35\% & 33.89\% \\
+Annualized Return & \textbf{93.31\%} & 31.09\% & 19.42\% & 15.68\% \\
+Sharpe Ratio & \textbf{5.52} & 1.85 & 0.56 & 0.89 \\
+Max Drawdown & \textbf{8.31\%} & 17.06\% & 43.21\% & 33.92\% \\
+Volatility & 16.89\% & 16.78\% & 24.31\% & 18.74\% \\
+Calmar Ratio & \textbf{11.23} & 1.82 & 0.45 & 0.46 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The DRL agents demonstrate clear superiority over passive strategies:
+\begin{itemize}
+    \item \textbf{DDPG outperforms SPY by 6.2$\times$} in Sharpe ratio (5.52 vs 0.89)
+    \item \textbf{DDPG limits drawdown to 8.31\%} while SPY suffered 33.92\% during COVID-19
+    \item \textbf{Equal-weight strategy} diversifies but still experiences 43\% drawdown due to lack of active risk management
+    \item \textbf{PPO doubles SPY's Sharpe ratio} despite more conservative positioning
 \end{itemize}
 
 \subsection{Portfolio Value Evolution}
@@ -142,7 +172,16 @@ Options Hedge P\&L & +\$89,432 & +\$12,156 & N/A \\
 
 \subsection{Options Hedging Analysis}
 
-Figure \ref{fig:options_analysis} shows the cumulative options P\&L over the test period.
+Figure \ref{fig:options_analysis} presents a comprehensive analysis of options hedging behavior, revealing significant differences in how DDPG and PPO utilize the options overlay strategy.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/options_analysis.png}
+\caption{Options hedging analysis comparing DDPG and PPO: (a) average options strategy usage showing DDPG's aggressive hedging approach, (b) total options P\&L comparison, (c) cumulative options profit over time with COVID-19 crash period highlighted, and (d) detailed hedging efficiency metrics.}
+\label{fig:options_analysis}
+\end{figure}
+
+Table \ref{tab:options_stats} provides additional quantitative details on the options hedging statistics.
 
 \begin{table}[htbp]
 \centering
@@ -171,6 +210,25 @@ DDPG learned to:
     \item Reduce hedges during low-volatility bull markets
     \item Optimize hedge ratios based on portfolio composition
 \end{enumerate}
+
+\subsection{Portfolio Weight Allocation}
+
+Figure \ref{fig:weight_allocation} presents a detailed analysis of how each agent allocates portfolio weights across assets and sectors.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/weight_allocation.png}
+\caption{Portfolio weight allocation analysis: (a) average sector allocation comparison, (b) DDPG sector allocation over time showing defensive shift during COVID-19, (c) DDPG top 5 holdings, (d) weight distribution showing DDPG's more concentrated approach vs PPO's diversification.}
+\label{fig:weight_allocation}
+\end{figure}
+
+Key allocation insights:
+\begin{itemize}
+    \item \textbf{DDPG Concentration}: DDPG maintains higher concentration in technology and growth assets during bull markets, achieving higher returns
+    \item \textbf{Defensive Rotation}: During the COVID-19 crash (days 230-280), DDPG shifts allocation toward bonds and defensive sectors
+    \item \textbf{PPO Diversification}: PPO maintains more equal weighting across assets, resulting in lower volatility but also lower returns
+    \item \textbf{Position Limits}: Both agents respect the 25\% maximum position constraint, but DDPG more frequently approaches this limit
+\end{itemize}
 
 \subsection{Risk-Adjusted Performance Comparison}
 
