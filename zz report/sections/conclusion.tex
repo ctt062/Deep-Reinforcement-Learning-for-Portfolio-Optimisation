@@ -3,23 +3,33 @@
 
 \subsection{Summary of Findings}
 
-This project investigated the application of Deep Reinforcement Learning to portfolio optimization with integrated options hedging and risk management. Our key findings are:
+This project investigated the application of Deep Reinforcement Learning to portfolio optimization with integrated risk management mechanisms. Our key findings are:
 
 \begin{enumerate}
-    \item \textbf{DDPG Superior Performance}: The Deep Deterministic Policy Gradient algorithm achieved a Sharpe ratio of 5.52, significantly outperforming PPO (1.85) and passive benchmarks. DDPG's off-policy learning and deterministic policy proved advantageous for continuous portfolio allocation.
+    \item \textbf{Comparable Algorithm Performance}: With unified hyperparameters (learning rate: $5\times10^{-5}$, batch size: 128, risk penalty $\lambda=5.0$), both DDPG and PPO achieved comparable risk-adjusted returns (Sharpe: 1.78 vs 1.84). This suggests algorithm choice is less critical than proper risk management design.
     
-    \item \textbf{Effective Drawdown Management}: DDPG limited maximum drawdown to 8.31\% during the COVID-19 market crash, compared to PPO's 17.06\% and the market's 33.9\% decline. This demonstrates the practical value of DRL-based risk management.
+    \item \textbf{Effective Drawdown Control}: Both agents achieved the $<$10\% maximum drawdown target (DDPG: 9.02\%, PPO: 9.05\%) during the COVID-19 market crash, compared to the market's 33.9\% decline.
     
-    \item \textbf{Options Hedging Value}: DDPG learned effective hedging strategies, generating \$126,568 in options profits. The agent successfully anticipated volatility spikes and increased hedge ratios proactively.
+    \item \textbf{Volatility Targeting Effectiveness}: Scaling exposure by inverse volatility helped both agents maintain consistent $\sim$11\% annualized volatility across varying market conditions.
     
-    \item \textbf{Tiered Stop-Loss Effectiveness}: The multi-tier stop-loss system provided systematic downside protection while preserving participation in market recoveries.
+    \item \textbf{Progressive Position Reduction}: The gradual deleveraging mechanism (3\% to 9\% drawdown) preserved capital while maintaining recovery participation.
     
-    \item \textbf{Crisis Alpha Generation}: Both agents demonstrated the ability to generate positive alpha during extreme market stress, with DDPG capturing significant crisis alpha through superior positioning and hedging.
+    \item \textbf{Risk Penalty Importance}: High risk penalty ($\lambda=5.0$) proved essential for achieving drawdown targets, demonstrating the importance of reward function design.
 \end{enumerate}
 
 \subsection{Contributions}
 
-As outlined in Section \ref{sec:introduction}, this work contributes: (1) an integrated framework combining DRL portfolio optimization with options hedging, (2) rigorous comparison of DDPG and PPO under consistent conditions, (3) evaluation during the COVID-19 tail risk event, and (4) an open-source implementation available at the repository linked in Section \ref{sec:experiments}.
+This work makes the following contributions to algorithmic portfolio management:
+
+\begin{enumerate}
+    \item \textbf{Risk Management Framework}: We developed a portfolio optimization framework combining volatility targeting, progressive position reduction, and aggressive drawdown penalties.
+    
+    \item \textbf{Fair Algorithm Comparison}: We provided rigorous comparison of DDPG and PPO under unified hyperparameters, demonstrating that proper risk management is more important than algorithm selection.
+    
+    \item \textbf{Stress Test Validation}: We validated the framework during the COVID-19 market crash, achieving $<$10\% drawdown while the market declined 33.9\%.
+    
+    \item \textbf{Open-Source Implementation}: We provide a complete, modular codebase at \url{https://github.com/ctt062/Deep-Reinforcement-Learning-for-Portfolio-Optimisation}.
+\end{enumerate}
 
 \subsection{Limitations}
 
@@ -71,6 +81,8 @@ Several directions for future research emerge from this work:
 
 \subsection{Final Remarks}
 
-Deep Reinforcement Learning offers a powerful paradigm for portfolio optimization that can adapt to complex market dynamics while integrating sophisticated risk management tools. Our results demonstrate that DDPG, when combined with options hedging and systematic stop-loss mechanisms, can achieve superior risk-adjusted returns and provide meaningful downside protection during tail risk events.
+Deep Reinforcement Learning offers a powerful paradigm for portfolio optimization that can adapt to complex market dynamics. Our results demonstrate that both DDPG and PPO, when combined with proper risk management mechanisms (volatility targeting, progressive position reduction, and aggressive drawdown penalties), can achieve robust risk-adjusted returns and meaningful downside protection during tail risk events.
 
-The framework developed in this project provides a foundation for further research and practical applications in algorithmic portfolio management. As markets continue to evolve and computational resources expand, DRL-based approaches are likely to play an increasingly important role in systematic investment strategies.
+The key insight from this work is that explicit risk management design is more important than algorithm selection. Both off-policy (DDPG) and on-policy (PPO) approaches achieve similar results when properly configured with unified hyperparameters and consistent risk controls.
+
+The framework developed in this project provides a foundation for practical applications in algorithmic portfolio management, demonstrating that DRL-based approaches can meet institutional-grade risk requirements ($<$10\% max drawdown) while generating positive risk-adjusted returns.

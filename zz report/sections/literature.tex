@@ -100,18 +100,10 @@ where:
 Protective puts represent a fundamental hedging strategy where an investor holding a long position purchases put options to limit downside risk. The payoff at expiration is:
 
 \begin{equation}
-\text{Payoff}_{\text{put}} = \max(S_T, K_{\text{put}}) - P_0
+\text{Payoff} = \max(S_T, K) - P_0
 \end{equation}
 
 where $P_0$ is the premium paid for the put option. This creates an asymmetric payoff profile that preserves upside potential while limiting losses.
-
-Covered calls complement protective puts by generating premium income. An investor holding a long position writes (sells) call options, receiving premium in exchange for capping upside potential:
-
-\begin{equation}
-\text{Payoff}_{\text{call}} = \min(S_T, K_{\text{call}}) + C_0
-\end{equation}
-
-where $C_0$ is the premium received. When combined, protective puts and covered calls form a \textit{collar strategy}, which bounds the portfolio's payoff within a defined range while potentially achieving near-zero net premium cost.
 
 \subsection{Risk Management in Algorithmic Trading}
 

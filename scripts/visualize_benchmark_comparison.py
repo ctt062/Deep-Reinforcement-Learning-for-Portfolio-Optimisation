@@ -52,7 +52,9 @@ def load_drawdowns(agent_name):
     
     with open(dd_file, 'r') as f:
         data = json.load(f)
-        return np.array(data['dates']), np.array(data['drawdowns'])
+        # Handle both 'drawdowns' and 'values' keys
+        drawdown_key = 'drawdowns' if 'drawdowns' in data else 'values'
+        return np.array(data['dates']), np.array(data[drawdown_key])
 
 def plot_sharpe_comparison(metrics_dict):
     """Plot 1: Sharpe Ratio Comparison"""
@@ -94,12 +96,15 @@ def plot_all_metrics_comparison(metrics_dict):
     agents = list(metrics_dict.keys())
     colors = ['#2ecc71', '#3498db']  # Green for DDPG, Blue for PPO
     
+    # Metrics that need to be converted from decimal to percentage
+    pct_metrics = {'total_return', 'max_drawdown', 'volatility', 'annualized_return', 'turnover'}
+    
     metrics = [
         ('sharpe_ratio', 'Sharpe Ratio', 1.0, 'Target: 1.0'),
         ('total_return', 'Total Return (%)', 15.0, 'Target: 15%'),
         ('max_drawdown', 'Max Drawdown (%)', 10.0, 'Target: <10%'),
         ('volatility', 'Volatility (%)', None, None),
-        ('average_turnover', 'Portfolio Turnover', None, None),
+        ('turnover', 'Portfolio Turnover (%)', None, None),
         ('annualized_return', 'Annualized Return (%)', None, None)
     ]
     
@@ -108,7 +113,9 @@ def plot_all_metrics_comparison(metrics_dict):
         
         values = [metrics_dict[agent][metric_key] for agent in agents]
         
-        # No need to convert - already in percentage format from evaluation script
+        # Convert decimal to percentage for relevant metrics
+        if metric_key in pct_metrics:
+            values = [v * 100 for v in values]
         
         bars = ax.bar(agents, values, color=colors, alpha=0.8, edgecolor='black', linewidth=1.5)
         
@@ -142,6 +149,11 @@ def plot_cumulative_values(values_dict):
     
     for agent in values_dict.keys():
         dates, values = values_dict[agent]
+        
+        # Align dates and values - take minimum length
+        min_len = min(len(dates), len(values))
+        dates = dates[:min_len]
+        values = values[:min_len]
         
         # Normalize to start at $100,000
         normalized_values = values / values[0] * 100000
@@ -184,10 +196,15 @@ def plot_drawdowns(drawdown_dict):
     for agent in drawdown_dict.keys():
         dates, drawdowns = drawdown_dict[agent]
         
-        # Drawdowns are already in percentage format from the JSON
-        drawdowns_pct = drawdowns
+        # Align dates and drawdowns - take minimum length
+        min_len = min(len(dates), len(drawdowns))
+        dates = dates[:min_len]
+        drawdowns = drawdowns[:min_len]
         
-        ax.plot(range(len(dates)), -drawdowns_pct,  # Negative for downward direction
+        # Drawdowns are in DECIMAL format (e.g., -0.09 for -9%), convert to percentage
+        drawdowns_pct = drawdowns * 100  # Now in percentage
+        
+        ax.plot(range(len(dates)), drawdowns_pct,  # Already negative
                 label=f'{agent}', 
                 color=colors[agent], 
                 linestyle=linestyles[agent],
@@ -207,7 +224,14 @@ def plot_drawdowns(drawdown_dict):
     # Fill areas
     for agent in drawdown_dict.keys():
         dates, drawdowns = drawdown_dict[agent]
-        drawdowns_pct = -drawdowns  # Already in percentage
+        
+        # Align dates and drawdowns - take minimum length
+        min_len = min(len(dates), len(drawdowns))
+        dates = dates[:min_len]
+        drawdowns = drawdowns[:min_len]
+        
+        # Drawdowns are in DECIMAL format and already negative
+        drawdowns_pct = drawdowns * 100  # Convert to percentage
         ax.fill_between(range(len(dates)), drawdowns_pct, 0, 
                         color=colors[agent], alpha=0.1)
     
@@ -219,60 +243,75 @@ def plot_drawdowns(drawdown_dict):
     print(f"✓ Saved: drawdown_over_time.png")
     plt.close()
 
-def plot_metrics_table(metrics_dict):
+def plot_metrics_table(metrics_dict, values_dict=None):
     """Plot 5: Summary Metrics Table"""
     fig, ax = plt.subplots(figsize=(14, 8))
     ax.axis('off')
     
     agents = list(metrics_dict.keys())
     
+    # Calculate final portfolio values if values_dict provided
+    final_values = {}
+    total_pnl = {}
+    if values_dict:
+        for agent in agents:
+            dates, values = values_dict[agent]
+            final_values[agent] = values[-1]
+            total_pnl[agent] = values[-1] - 100000  # Initial balance
+    
     # Prepare data
     table_data = []
     row_labels = [
         'Sharpe Ratio',
+        'Sortino Ratio',
+        'Calmar Ratio',
         'Total Return (%)',
         'Annualized Return (%)',
         'Max Drawdown (%)',
         'Volatility (%)',
-        'Average Turnover',
+        'Win Rate (%)',
+        'VaR (95%)',
         'Final Portfolio Value',
-        'Total Option P&L',
-        'Avg Protective Puts',
-        'Avg Covered Calls'
+        'Total P&L'
     ]
     
     metric_keys = [
         'sharpe_ratio',
+        'sortino_ratio',
+        'calmar_ratio',
         'total_return',
         'annualized_return',
         'max_drawdown',
         'volatility',
-        'average_turnover',
+        'win_rate',
+        'var_95',
         'final_portfolio_value',
-        'total_option_pnl',
-        'average_protective_puts',
-        'average_covered_calls'
+        'total_pnl'
     ]
     
     for label, key in zip(row_labels, metric_keys):
         row = [label]
         for agent in agents:
-            value = metrics_dict[agent].get(key, 0)
-            
-            # Format based on metric type
-            # Values are already in percentage format from evaluation script
-            if 'return' in key or 'drawdown' in key or 'volatility' in key:
-                row.append(f'{value:.2f}%')
-            elif 'protective_puts' in key or 'covered_calls' in key or 'turnover' in key:
-                # Options ratios and turnover - show as percentage with 2 decimals (multiply by 100)
-                row.append(f'{value*100:.2f}%')
-            elif 'ratio' in key:
-                row.append(f'{value:.4f}')
-            elif 'value' in key or 'pnl' in key:
-                # Format as currency
-                row.append(f'${value:,.0f}')
+            # Special handling for calculated fields
+            if key == 'final_portfolio_value':
+                value = final_values.get(agent, 0)
+                row.append(f'${value:,.2f}')
+            elif key == 'total_pnl':
+                value = total_pnl.get(agent, 0)
+                row.append(f'${value:,.2f}')
             else:
-                row.append(f'{value:.2f}')
+                value = metrics_dict[agent].get(key, 0)
+                
+                # Format based on metric type
+                # Values are in DECIMAL format - need to convert to percentage
+                if 'return' in key or 'drawdown' in key or 'volatility' in key or 'win_rate' in key:
+                    row.append(f'{value * 100:.2f}%')  # Convert decimal to percentage
+                elif 'var' in key:
+                    row.append(f'{value * 100:.2f}%')  # VaR as percentage
+                elif 'ratio' in key:
+                    row.append(f'{value:.4f}')
+                else:
+                    row.append(f'{value:.4f}')
         
         table_data.append(row)
     
@@ -359,7 +398,7 @@ def main():
     if metrics_dict:
         plot_sharpe_comparison(metrics_dict)
         plot_all_metrics_comparison(metrics_dict)
-        plot_metrics_table(metrics_dict)
+        plot_metrics_table(metrics_dict, values_dict)
     
     if values_dict:
         plot_cumulative_values(values_dict)

@@ -24,13 +24,13 @@ Deep Reinforcement Learning (DRL) offers a promising alternative framework for p
 This project investigates the application of Deep Reinforcement Learning to portfolio optimization with the following primary objectives:
 
 \begin{enumerate}
-    \item \textbf{Algorithm Comparison}: Implement and compare two state-of-the-art DRL algorithms—Deep Deterministic Policy Gradient (DDPG) and Proximal Policy Optimization (PPO)—for continuous portfolio weight allocation.
+    \item \textbf{Algorithm Comparison}: Implement and compare two state-of-the-art DRL algorithms—Deep Deterministic Policy Gradient (DDPG) and Proximal Policy Optimization (PPO)—for continuous portfolio weight allocation under unified hyperparameters.
     
-    \item \textbf{Options Integration}: Develop a novel framework for incorporating options-based hedging strategies within the DRL portfolio optimization environment, enabling dynamic downside protection.
+    \item \textbf{Risk Management Design}: Develop a comprehensive risk management framework combining volatility targeting, progressive position reduction, and aggressive drawdown penalties to achieve $<$10\% maximum drawdown.
     
-    \item \textbf{Risk Management}: Design and evaluate a multi-tiered stop-loss system that adapts portfolio exposure based on drawdown levels, providing systematic risk control.
+    \item \textbf{Drawdown Control}: Design and evaluate mechanisms that adapt portfolio exposure based on drawdown levels and realized volatility, providing systematic risk control.
     
-    \item \textbf{Stress Testing}: Evaluate the trained agents' performance during extreme market conditions, specifically the COVID-19 market crash of March 2020, to assess robustness and crisis-alpha generation.
+    \item \textbf{Stress Testing}: Evaluate the trained agents' performance during extreme market conditions, specifically the COVID-19 market crash of March 2020, to validate the risk management framework.
     
     \item \textbf{Reproducibility}: Create a comprehensive, well-documented codebase that enables reproduction and extension of our results.
 \end{enumerate}
@@ -40,13 +40,13 @@ This project investigates the application of Deep Reinforcement Learning to port
 This work makes the following contributions to the field of algorithmic portfolio management:
 
 \begin{enumerate}
-    \item \textbf{Integrated Options Hedging}: We develop a novel portfolio environment that integrates Black-Scholes options pricing with DRL-based portfolio optimization, allowing agents to learn when and how much to hedge using put options.
+    \item \textbf{Volatility Targeting Framework}: We implement industry-standard volatility targeting that scales portfolio exposure based on realized volatility, maintaining consistent risk regardless of market conditions.
     
-    \item \textbf{Adaptive Stop-Loss Mechanism}: We implement a tiered stop-loss system that progressively reduces portfolio exposure as drawdowns deepen, providing systematic downside protection while allowing participation in market recoveries.
+    \item \textbf{Aggressive Drawdown Control}: We design a multi-layered drawdown control system combining progressive position reduction (starting at 3\% drawdown) with aggressive reward penalties ($\lambda=5.0$) to achieve $<$10\% maximum drawdown target.
     
-    \item \textbf{Comprehensive Benchmark Study}: We conduct extensive experiments comparing DDPG and PPO across multiple performance dimensions, including risk-adjusted returns, drawdown characteristics, and behavior during market stress.
+    \item \textbf{Fair Algorithm Comparison}: We conduct rigorous comparison of DDPG and PPO under unified hyperparameters, demonstrating that both algorithms achieve comparable performance when properly configured.
     
-    \item \textbf{COVID-19 Stress Test}: We specifically evaluate model performance during the March 2020 market crash, demonstrating the practical value of DRL-based portfolio management during tail risk events.
+    \item \textbf{COVID-19 Stress Test}: We validate the framework during the March 2020 market crash, demonstrating $<$10\% drawdown while the market declined 33.9\%.
     
     \item \textbf{Open-Source Implementation}: We provide a complete, modular implementation suitable for research and practical applications, including data loading, environment simulation, agent training, and performance visualization.
 \end{enumerate}

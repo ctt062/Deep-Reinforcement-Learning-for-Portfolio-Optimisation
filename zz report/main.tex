@@ -95,13 +95,13 @@
 
 % Abstract
 \begin{abstract}
-This project investigates the application of Deep Reinforcement Learning (DRL) to portfolio optimization with integrated options hedging and systematic risk management. We implement and compare two state-of-the-art algorithms---Deep Deterministic Policy Gradient (DDPG) and Proximal Policy Optimization (PPO)---for continuous portfolio weight allocation across 18 diversified assets spanning eight market sectors.
+This project investigates the application of Deep Reinforcement Learning (DRL) to portfolio optimization with systematic risk management mechanisms. We implement and compare two state-of-the-art algorithms---Deep Deterministic Policy Gradient (DDPG) and Proximal Policy Optimization (PPO)---for continuous portfolio weight allocation across 18 diversified assets spanning eight market sectors.
 
-Our framework incorporates Black-Scholes options pricing for dynamic hedging and a tiered stop-loss mechanism for systematic downside protection. Training on 2010-2018 market data and testing on 2019-2020 (including the COVID-19 market crash), we find that DDPG significantly outperforms PPO with a Sharpe ratio of 5.52 versus 1.85, achieving 219\% total return while limiting maximum drawdown to just 8.31\% compared to the market's 34\% decline.
+Our framework incorporates volatility targeting, progressive position reduction, and aggressive drawdown penalties to achieve institutional-grade risk control. Training on 2010-2018 market data and testing on 2019-2020 (including the COVID-19 market crash), we find that both DDPG and PPO achieve comparable risk-adjusted returns under unified hyperparameters (Sharpe: 1.78 vs 1.84, Max Drawdown: 9.02\% vs 9.05\%), demonstrating that proper risk management design is more important than algorithm selection.
 
-DDPG's superior performance stems from its off-policy learning capability and deterministic policy output, which proves advantageous for the portfolio allocation task. The agent learned effective hedging strategies, generating \$126,568 in options profits during the test period. These results demonstrate the practical potential of DRL-based portfolio management for navigating both normal market conditions and tail risk events.
+Both agents achieved the $<$10\% maximum drawdown target while the market declined 33.9\% during the COVID-19 crash. The volatility targeting mechanism maintained consistent $\sim$11\% annualized volatility across varying market conditions. These results demonstrate the practical potential of DRL-based portfolio management when combined with proper risk management frameworks.
 
-\textbf{Keywords:} Deep Reinforcement Learning, Portfolio Optimization, DDPG, PPO, Options Hedging, Risk Management, COVID-19
+\textbf{Keywords:} Deep Reinforcement Learning, Portfolio Optimization, DDPG, PPO, Volatility Targeting, Risk Management, COVID-19
 \end{abstract}
 
 \newpage

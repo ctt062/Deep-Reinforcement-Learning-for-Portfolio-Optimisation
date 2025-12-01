@@ -105,151 +105,90 @@ Unlike supervised learning, we do not use a separate validation set for the foll
 
 \subsection{Hyperparameter Configuration}
 
-Hyperparameter selection significantly impacts DRL agent performance. We conducted preliminary experiments to tune key parameters, then adopted configurations that demonstrated robust learning and stable convergence across training runs. The following subsections detail the final hyperparameter settings for each algorithm and the environment.
+\subsubsection{Unified Hyperparameters}
 
-\subsubsection{DDPG Hyperparameters}
-
-DDPG employs an actor-critic architecture with separate neural networks for policy (actor) and value estimation (critic). Table \ref{tab:ddpg_params} presents the final configuration.
+To ensure fair comparison between DDPG and PPO, we use unified hyperparameters where applicable. Table \ref{tab:unified_params} shows the shared configuration.
 
 \begin{table}[htbp]
 \centering
-\caption{DDPG hyperparameter configuration}
+\caption{Unified hyperparameters for fair comparison}
+\label{tab:unified_params}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Parameter} & \textbf{Value (Both Agents)} \\
+\midrule
+Learning rate & $5 \times 10^{-5}$ \\
+Batch size & 128 \\
+Discount factor ($\gamma$) & 0.99 \\
+Network architecture & [512, 512, 256, 128] \\
+Risk penalty coefficient ($\lambda$) & 5.0 \\
+Training timesteps & 100,000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{DDPG-Specific Parameters}
+
+\begin{table}[htbp]
+\centering
+\caption{DDPG-specific hyperparameters}
 \label{tab:ddpg_params}
-\begin{tabular}{@{}llp{6cm}@{}}
+\begin{tabular}{@{}ll@{}}
 \toprule
-\textbf{Parameter} & \textbf{Value} & \textbf{Rationale} \\
+\textbf{Parameter} & \textbf{Value} \\
 \midrule
-Learning rate & $1 \times 10^{-4}$ & Conservative rate for stable convergence \\
-Replay buffer size & 500,000 & Large buffer for diverse experience sampling \\
-Learning starts & 10,000 & Warm-up period for buffer population \\
-Batch size & 256 & Larger batches reduce gradient variance \\
-Discount factor ($\gamma$) & 0.99 & High discount for long-term reward focus \\
-Soft update coefficient ($\tau$) & 0.01 & Moderate target network update rate \\
-Actor network & [512, 512, 256, 128] & Deep network for complex state representation \\
-Critic network & [512, 512, 256, 128] & Matching architecture for value estimation \\
-Activation function & Tanh & Bounded outputs for stable learning \\
-Action noise ($\sigma$) & 0.15 & Gaussian noise for exploration \\
-Training timesteps & 100,000 & Sufficient for convergence on training data \\
+Replay buffer size & 500,000 \\
+Learning starts & 10,000 \\
+Soft update coefficient ($\tau$) & 0.01 \\
+Action noise & 0.15 \\
+Train frequency & 1 \\
+Gradient steps & 1 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Key design choices for DDPG include:
-\begin{itemize}
-    \item \textbf{Large Replay Buffer}: A 500,000-transition buffer ensures the agent learns from diverse market conditions, reducing overfitting to recent experiences.
-    \item \textbf{Deeper Networks}: The [512, 512, 256, 128] architecture captures complex non-linear relationships between market features and optimal portfolio weights.
-    \item \textbf{Moderate $\tau$}: The soft update coefficient of 0.01 (vs. the common 0.005) provides faster adaptation while maintaining stability.
-    \item \textbf{Gaussian Exploration Noise}: Standard deviation of 0.15 encourages sufficient exploration of the action space during training.
-\end{itemize}
-
-\subsubsection{PPO Hyperparameters}
-
-PPO is an on-policy algorithm that collects trajectories and performs multiple epochs of updates with clipped objective. Table \ref{tab:ppo_params} shows the configuration.
+\subsubsection{PPO-Specific Parameters}
 
 \begin{table}[htbp]
 \centering
-\caption{PPO hyperparameter configuration}
+\caption{PPO-specific hyperparameters}
 \label{tab:ppo_params}
-\begin{tabular}{@{}llp{6cm}@{}}
+\begin{tabular}{@{}ll@{}}
 \toprule
-\textbf{Parameter} & \textbf{Value} & \textbf{Rationale} \\
+\textbf{Parameter} & \textbf{Value} \\
 \midrule
-Learning rate & $5 \times 10^{-5}$ & Lower rate for stable policy updates \\
-Steps per update & 2,048 & Trajectory length before each update \\
-Batch size & 128 & Mini-batch size for SGD updates \\
-Number of epochs & 10 & Epochs per collected trajectory \\
-Discount factor ($\gamma$) & 0.99 & Long-term reward consideration \\
-GAE parameter ($\lambda$) & 0.95 & Bias-variance tradeoff in advantage estimation \\
-Clip range ($\epsilon$) & 0.2 & Standard PPO clipping threshold \\
-Entropy coefficient & 0.05 & Higher entropy for exploration \\
-Value function coefficient & 0.5 & Weight for value loss in total objective \\
-Network architecture & [512, 512, 256, 128] & Shared architecture for policy and value \\
-Max gradient norm & 0.5 & Gradient clipping for stability \\
-Training timesteps & 100,000 & Matching DDPG for fair comparison \\
+Steps per update (n\_steps) & 2,048 \\
+Number of epochs & 10 \\
+GAE parameter ($\lambda$) & 0.95 \\
+Clip range ($\epsilon$) & 0.2 \\
+Entropy coefficient & 0.01 \\
+Value function coefficient & 0.5 \\
+Max gradient norm & 0.5 \\
 \bottomrule
 \end{tabular}
 \end{table}
-
-Notable PPO configuration choices:
-\begin{itemize}
-    \item \textbf{Lower Learning Rate}: PPO's on-policy nature requires more conservative updates ($5 \times 10^{-5}$ vs. DDPG's $1 \times 10^{-4}$) to prevent policy collapse.
-    \item \textbf{Higher Entropy Coefficient}: The 0.05 entropy bonus encourages exploration, which is critical for PPO as it cannot replay past experiences.
-    \item \textbf{GAE with $\lambda = 0.95$}: Generalized Advantage Estimation provides low-variance advantage estimates while maintaining reasonable bias.
-    \item \textbf{Standard Clipping}: The $\epsilon = 0.2$ clip range prevents excessively large policy updates that could destabilize training.
-\end{itemize}
 
 \subsubsection{Environment Configuration}
-
-The portfolio environment encapsulates market dynamics, transaction costs, and risk management mechanisms. Table \ref{tab:env_params} presents the configuration.
 
 \begin{table}[htbp]
 \centering
 \caption{Environment configuration parameters}
 \label{tab:env_params}
-\begin{tabular}{@{}llp{6cm}@{}}
-\toprule
-\textbf{Parameter} & \textbf{Value} & \textbf{Rationale} \\
-\midrule
-Initial portfolio value & \$1,000,000 & Institutional-scale testing \\
-Transaction cost & 0.001 (10 bps) & Realistic trading friction \\
-Lookback window & 60 days & Extended history for pattern recognition \\
-Risk-free rate & 2\% annual & Typical Treasury rate for period \\
-Maximum position size & 25\% per asset & Concentration limit for diversification \\
-Turnover penalty & 0.0005 & Discourages excessive rebalancing \\
-\midrule
-\multicolumn{3}{@{}l@{}}{\textit{Risk Management}} \\
-\midrule
-Risk penalty coefficient & 0.8 (DDPG) / 1.0 (PPO) & Volatility penalization in reward \\
-Stop-loss threshold & 5\% & Trigger for defensive positioning \\
-Stop-loss recovery & 2\% & Return to normal after recovery \\
-\midrule
-\multicolumn{3}{@{}l@{}}{\textit{Options Hedging}} \\
-\midrule
-Maximum hedge ratio & 25\% & Cap on portfolio hedging \\
-Protective put strike & 96\% of value & 4\% out-of-the-money puts \\
-Covered call strike & 104\% of value & 4\% out-of-the-money calls \\
-Option expiry & 30 days & Monthly rolling hedges \\
-Option cost factor & 1.5\% & Black-Scholes premium estimate \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsubsection{Agent-Specific Risk Parameters}
-
-Different risk penalty coefficients ($\lambda$) were used for each algorithm based on preliminary experiments:
-\begin{itemize}
-    \item \textbf{DDPG ($\lambda = 0.8$)}: DDPG's deterministic policy benefits from moderate risk penalization, allowing the agent to take calculated risks when the expected return is high.
-    \item \textbf{PPO ($\lambda = 1.0$)}: PPO's stochastic policy requires stronger risk penalization to prevent excessive variance in portfolio allocations.
-\end{itemize}
-
-The risk-adjusted reward function incorporates these penalties:
-\begin{equation}
-r_t = \mu_t - \lambda \cdot \sigma_t^2
-\end{equation}
-where $\mu_t$ is the portfolio return and $\sigma_t^2$ is the rolling variance computed over the lookback window.
-
-\subsubsection{Feature Engineering Configuration}
-
-The state representation incorporates multiple technical indicators to provide comprehensive market information:
-
-\begin{table}[htbp]
-\centering
-\caption{Feature engineering parameters}
-\label{tab:features}
 \begin{tabular}{@{}ll@{}}
 \toprule
-\textbf{Feature Type} & \textbf{Configuration} \\
+\textbf{Parameter} & \textbf{Value} \\
 \midrule
-Price normalization & Z-score (252-day rolling) \\
-Returns & Raw and log returns \\
-Simple Moving Averages & [10, 20, 50, 200] days \\
-Exponential Moving Averages & [10, 20, 50] days \\
-Momentum indicators & [5, 10, 20, 60] days \\
+Initial portfolio value & \$100,000 \\
+Transaction cost & 0.001 (10 bps) \\
+Lookback window & 60 days \\
+Risk-free rate & 2\% annual \\
+Risk penalty coefficient ($\lambda$) & 5.0 \\
+Volatility target & 10\% annualized \\
+Position reduction start & 3\% drawdown \\
+Minimum exposure & 10\% (at 9\% drawdown) \\
 \bottomrule
 \end{tabular}
 \end{table}
-
-The 252-day rolling normalization window corresponds to one trading year, ensuring that state features remain stationary and comparable across different market regimes.
 
 \subsection{Benchmark Strategies}
 
@@ -274,7 +213,7 @@ We compare DRL agents against several benchmark strategies:
 
 \subsection{Evaluation Metrics}
 
-We evaluate performance using multiple metrics defined formally below:
+We evaluate performance using multiple metrics:
 
 \begin{table}[htbp]
 \centering
@@ -287,11 +226,10 @@ We evaluate performance using multiple metrics defined formally below:
 Total Return & Cumulative portfolio return over test period \\
 Annualized Return & Geometric mean annual return \\
 Annualized Volatility & Standard deviation of returns, annualized \\
-Sharpe Ratio & Risk-adjusted return: $(R_p - R_f) / \sigma_p$ \\
-Sortino Ratio & Downside risk-adjusted: $(R_p - R_f) / \sigma_{\text{down}}$ \\
+Sharpe Ratio & Risk-adjusted return measure \\
+Sortino Ratio & Downside risk-adjusted return \\
 Maximum Drawdown & Largest peak-to-trough decline \\
 Calmar Ratio & Annual return divided by max drawdown \\
-Information Ratio & Active return over tracking error: $(R_p - R_b) / \sigma_{p-b}$ \\
 Win Rate & Percentage of positive return days \\
 Average Daily Return & Mean daily portfolio return \\
 Options P\&L & Cumulative profit/loss from hedging \\
@@ -299,82 +237,33 @@ Options P\&L & Cumulative profit/loss from hedging \\
 \end{tabular}
 \end{table}
 
-Key metric formulas:
-\begin{align}
-\text{Sharpe Ratio} &= \frac{\bar{R}_p - R_f}{\sigma_p} \times \sqrt{252} \\
-\text{Sortino Ratio} &= \frac{\bar{R}_p - R_f}{\sigma_{\text{downside}}} \times \sqrt{252} \\
-\text{Information Ratio} &= \frac{\bar{R}_p - \bar{R}_{\text{benchmark}}}{\sigma_{p - \text{benchmark}}} \times \sqrt{252} \\
-\text{Max Drawdown} &= \max_{t \in [0,T]} \frac{\max_{s \in [0,t]} V_s - V_t}{\max_{s \in [0,t]} V_s}
-\end{align}
-
-where $\bar{R}_p$ is the mean portfolio return, $R_f$ is the risk-free rate, $\sigma_p$ is portfolio volatility, and $\sigma_{\text{downside}}$ is the standard deviation of negative returns only.
-
 \subsection{Computational Environment}
 
 Experiments were conducted using the following setup:
 
 \begin{itemize}
-    \item \textbf{Hardware}: MacBook Pro with Apple M-series chip (8-core CPU)
-    \item \textbf{Software}: Python 3.13.3, PyTorch 2.5.1
+    \item \textbf{Hardware}: MacBook Pro with Apple M-series chip
+    \item \textbf{Software}: Python 3.13.3, PyTorch 2.x
     \item \textbf{Libraries}: 
     \begin{itemize}
-        \item Stable-Baselines3 2.3.2 for DRL implementations
-        \item Gymnasium 0.29.1 for environment interface
-        \item NumPy 1.26.4, Pandas 2.2.0 for data manipulation
-        \item Matplotlib 3.8.2, Seaborn 0.13.0 for visualization
-        \item SciPy 1.12.0 for Black-Scholes calculations
+        \item Stable-Baselines3 for DRL implementations
+        \item Gymnasium for environment interface
+        \item NumPy, Pandas for data manipulation
+        \item Matplotlib, Seaborn for visualization
     \end{itemize}
-    \item \textbf{Training Time}: 
-    \begin{itemize}
-        \item DDPG: $\sim$45 minutes (100,000 timesteps)
-        \item PPO: $\sim$35 minutes (100,000 timesteps)
-    \end{itemize}
+    \item \textbf{Training Time}: Approximately 30-60 minutes per agent
 \end{itemize}
-
-Figure \ref{fig:training_curves} shows the training progress for both algorithms.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.95\textwidth]{figures/training_curves.png}
-\caption{Training curves showing episode reward progression over 100,000 timesteps. (a) DDPG converges faster due to off-policy learning and experience replay. (b) PPO shows more gradual improvement with higher variance typical of on-policy methods.}
-\label{fig:training_curves}
-\end{figure}
-
-DDPG demonstrates faster convergence due to its off-policy nature and experience replay, while PPO's on-policy learning results in more gradual improvement with higher variance.
 
 \subsection{Reproducibility}
 
-To ensure reproducibility, we implement the following measures:
-
-\begin{table}[htbp]
-\centering
-\caption{Reproducibility specifications}
-\label{tab:reproducibility}
-\begin{tabular}{@{}ll@{}}
-\toprule
-\textbf{Component} & \textbf{Specification} \\
-\midrule
-Global random seed & 42 \\
-NumPy seed & 42 \\
-PyTorch seed & 42 \\
-Python hash seed & 42 \\
-CUDA deterministic & True \\
-\midrule
-Config file format & YAML \\
-Model checkpoint format & Stable-Baselines3 ZIP \\
-Results format & JSON \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Reproducibility is ensured through:
+To ensure reproducibility:
 \begin{itemize}
-    \item \textbf{Fixed Random Seeds}: All random number generators initialized with seed 42
-    \item \textbf{Version Control}: Configuration files and trained models are versioned
-    \item \textbf{Deterministic Operations}: PyTorch configured for deterministic execution
-    \item \textbf{Data Caching}: Downloaded price data is cached locally to ensure consistency
-    \item \textbf{Documented Preprocessing}: All data transformation steps are explicitly defined in configuration files
+    \item Random seeds are fixed across all experiments
+    \item Configuration files specify all hyperparameters
+    \item Data preprocessing steps are documented
+    \item Trained models are saved and versioned
+    \item Evaluation scripts produce deterministic results
 \end{itemize}
 
-The complete codebase, trained models, and configuration files are available at:\\
+The complete codebase is available at:\\
 \url{https://github.com/ctt062/Deep-Reinforcement-Learning-for-Portfolio-Optimisation}

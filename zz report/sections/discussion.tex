@@ -1,81 +1,53 @@
 \section{Discussion}
 \label{sec:discussion}
 
-\subsection{Why DDPG Outperforms PPO}
+\subsection{Algorithm Comparison Under Unified Configuration}
 
-The substantial performance gap between DDPG and PPO can be attributed to several factors inherent to each algorithm's design and their suitability for the portfolio optimization task.
+With unified hyperparameters (learning rate: $5\times10^{-5}$, batch size: 128, risk penalty $\lambda=5.0$), both DDPG and PPO achieve comparable risk-adjusted performance. This finding has important implications.
 
-\subsubsection{Off-Policy Learning Advantage}
+\subsubsection{Off-Policy vs On-Policy Learning}
 
-DDPG's off-policy nature provides a significant advantage in the financial domain:
-
-\begin{itemize}
-    \item \textbf{Sample Efficiency}: DDPG can learn from past experiences stored in the replay buffer, effectively utilizing historical market data multiple times.
-    
-    \item \textbf{Exploration-Exploitation Balance}: The experience replay mechanism allows DDPG to explore the action space more thoroughly while still exploiting known good strategies.
-    
-    \item \textbf{Diverse Learning Signal}: By sampling randomly from the replay buffer, DDPG learns from a diverse set of market conditions in each update, improving generalization.
-\end{itemize}
-
-In contrast, PPO's on-policy nature means it can only learn from its most recent experiences, potentially missing valuable lessons from earlier market regimes.
-
-\subsubsection{Deterministic Policy Benefits}
-
-DDPG's deterministic policy offers advantages for portfolio allocation:
+DDPG (off-policy) and PPO (on-policy) represent fundamentally different learning paradigms:
 
 \begin{itemize}
-    \item \textbf{Consistency}: Given the same market state, DDPG always outputs the same allocation, leading to more stable portfolio management.
+    \item \textbf{DDPG Advantages}: Sample efficiency through experience replay, stable deterministic policy, direct Q-value optimization.
     
-    \item \textbf{Interpretability}: The deterministic mapping from states to actions is easier to analyze and understand.
-    
-    \item \textbf{No Variance from Sampling}: Unlike PPO which samples from a distribution, DDPG's actions have no inherent randomness, reducing noise in portfolio construction.
+    \item \textbf{PPO Advantages}: Stable policy updates through clipping, better exploration via stochastic policy, simpler hyperparameter tuning.
 \end{itemize}
 
-\subsubsection{Q-Value Learning}
+When properly configured, both approaches achieve similar performance, suggesting that the choice of algorithm is less important than proper hyperparameter tuning and risk management design.
 
-DDPG's critic network learns Q-values that estimate long-term returns:
+\subsubsection{Deterministic vs Stochastic Policies}
 
+DDPG uses a deterministic policy $\ba_t = \mu_\theta(s_t)$, while PPO samples from a distribution $a \sim \mathcal{N}(\mu_\theta(s), \sigma_\theta(s))$.
+
+In our final configuration (reduced entropy coefficient of 0.01), PPO's stochastic policy provides:
+\begin{itemize}
+    \item Better exploration of the action space during training
+    \item Slight edge in risk-adjusted returns (Sharpe: 1.84 vs 1.78)
+    \item Similar drawdown control through unified risk penalty
+\end{itemize}
+
+\subsection{Importance of Risk Management Design}
+
+The key finding is that explicit risk management mechanisms are more important than algorithm selection:
+
+\subsubsection{Volatility Targeting}
+Scaling exposure by inverse volatility ensures consistent risk regardless of market conditions:
 \begin{equation}
-Q(s, a) = \E\left[\sum_{t=0}^{\infty} \gamma^t r_t \mid s_0 = s, a_0 = a\right]
+\text{Exposure} = \min\left(1.0, \frac{\sigma_{\text{target}}}{\sigma_{\text{realized}}}\right)
 \end{equation}
 
-This provides a more direct optimization signal compared to PPO's advantage estimation, which can suffer from high variance in financial environments with noisy rewards.
-
-\subsection{PPO's Limitations in This Context}
-
-Several factors contribute to PPO's relatively weaker performance:
-
-\subsubsection{On-Policy Data Efficiency}
-
-PPO discards data after each policy update, which is inefficient when:
+\subsubsection{Aggressive Drawdown Penalties}
+The reward function with aggressive drawdown penalties ($\lambda=5.0$) incentivizes both agents to maintain $<$10\% max drawdown:
 \begin{itemize}
-    \item Training data represents valuable historical market information
-    \item Market regimes change slowly, making recent data less representative
-    \item The environment (financial markets) is partially observable
+    \item Penalty starts at 2\% drawdown
+    \item Exponential scaling as drawdown increases
+    \item Massive penalty above 8\% drawdown
 \end{itemize}
 
-\subsubsection{Clipping Limitations}
-
-The clipped objective function, while providing stability, may be overly conservative:
-\begin{equation}
-L^{\text{CLIP}} = \min(r_t(\theta)\hat{A}_t, \text{clip}(r_t(\theta), 1-\epsilon, 1+\epsilon)\hat{A}_t)
-\end{equation}
-
-In rapidly changing market conditions, this clipping can prevent the agent from adapting quickly enough to new regimes.
-
-\subsubsection{Stochastic Policy Drawbacks}
-
-PPO's stochastic policy adds noise to portfolio allocations:
-\begin{equation}
-a \sim \mathcal{N}(\mu_\theta(s), \sigma_\theta(s))
-\end{equation}
-
-While beneficial for exploration, this can lead to:
-\begin{itemize}
-    \item Inconsistent portfolio weights across similar market states
-    \item Higher transaction costs from unnecessary rebalancing
-    \item Suboptimal hedging decisions due to action variance
-\end{itemize}
+\subsubsection{Progressive Position Reduction}
+Automatic deleveraging starting at 3\% drawdown ensures capital preservation independent of agent actions.
 
 \subsection{Options Hedging Insights}
 
@@ -103,30 +75,36 @@ PPO's lower hedge utilization (23 days vs. 89 days) suggests:
     \item Possible underfitting to the hedging component of the action space
 \end{itemize}
 
-\subsection{Stop-Loss Mechanism Effectiveness}
+\subsection{Risk Management Effectiveness}
 
-The tiered stop-loss system proved effective for both agents:
+Both agents achieved the $<$10\% max drawdown target through the combined effect of:
+
+\begin{enumerate}
+    \item \textbf{Volatility Targeting}: Scaled exposure when realized volatility exceeded 10\% target
+    \item \textbf{Progressive Position Reduction}: Deleveraging from 3\% to 9\% drawdown
+    \item \textbf{Aggressive Reward Penalties}: Risk penalty $\lambda=5.0$ strongly discouraged drawdowns
+\end{enumerate}
 
 \begin{table}[htbp]
 \centering
-\caption{Stop-loss trigger statistics}
-\label{tab:stoploss_triggers}
+\caption{Risk management effectiveness}
+\label{tab:risk_effectiveness}
 \begin{tabular}{@{}lrr@{}}
 \toprule
-\textbf{Threshold} & \textbf{DDPG Triggers} & \textbf{PPO Triggers} \\
+\textbf{Metric} & \textbf{DDPG} & \textbf{PPO} \\
 \midrule
-5\% (reduce to 75\%) & 3 & 7 \\
-10\% (reduce to 50\%) & 1 & 4 \\
-15\% (reduce to 25\%) & 0 & 2 \\
+Max Drawdown & 9.02\% & 9.05\% \\
+Volatility & 10.96\% & 11.09\% \\
+VaR (95\%) & 1.08\% & 1.07\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-DDPG's fewer stop-loss triggers indicate:
+Both agents learned to:
 \begin{itemize}
-    \item Better risk management before reaching thresholds
-    \item More effective use of options hedging for downside protection
-    \item Superior positioning during market stress
+    \item Maintain consistent risk profiles through volatility targeting
+    \item Reduce exposure proactively as drawdowns approach limits
+    \item Balance return generation with risk control
 \end{itemize}
 
 \subsection{Limitations and Considerations}
@@ -187,27 +165,6 @@ For practitioners considering DRL-based portfolio management:
     \item Real-time monitoring and human oversight remain important
     \item Regular model retraining may be necessary as market dynamics evolve
 \end{itemize}
-
-\subsection{Asset Correlation Analysis}
-
-Figure \ref{fig:correlation} shows the correlation structure of our asset universe during the training period (2010-2018).
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.85\textwidth]{figures/correlation_matrix.png}
-\caption{Asset correlation matrix computed from training period data (2010-2018). Technology stocks show high intra-sector correlation, while bonds (TLT, AGG) provide diversification benefits through low/negative correlation with equities.}
-\label{fig:correlation}
-\end{figure}
-
-Key observations from the correlation structure:
-\begin{itemize}
-    \item \textbf{Technology Cluster}: AAPL, MSFT, GOOGL, NVDA, AMZN show correlations of 0.6-0.8, limiting diversification within sector
-    \item \textbf{Bond Diversification}: TLT and AGG have near-zero or negative correlations with equities, providing true diversification
-    \item \textbf{Gold Hedge}: GLD shows low correlation ($\sim$0.1-0.2) with most assets, serving as a crisis hedge
-    \item \textbf{Index Correlation}: SPY, QQQ, and IWM are highly correlated with individual stocks, providing less diversification than expected
-\end{itemize}
-
-The DRL agents learned to exploit these correlation patterns---DDPG's shift to bonds during the COVID-19 crash demonstrates understanding of the negative correlation between bonds and equities during risk-off periods.
 
 \subsection{Comparison with Literature}
 

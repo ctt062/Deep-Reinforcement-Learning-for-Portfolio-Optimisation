@@ -64,14 +64,14 @@ options:
   enabled: true
   protective_puts:
     enabled: true
-    max_hedge_ratio: 0.50    # INCREASED from 0.25 - more tail risk hedging
-    strike_pct: 0.97         # Closer to ATM for better protection
+    max_hedge_ratio: 0.25
+    strike_pct: 0.96
     expiry_days: 30
     cost_factor: 0.015
   covered_calls:
     enabled: true
-    max_coverage_ratio: 0.35  # Slightly increased for more premium income
-    strike_pct: 1.03         # Closer to ATM
+    max_coverage_ratio: 0.25
+    strike_pct: 1.04
     expiry_days: 30
     premium_factor: 0.015
 
@@ -105,7 +105,7 @@ agents:
     gamma: 0.99
     gae_lambda: 0.95
     clip_range: 0.2
-    ent_coef: 0.01          # REDUCED from 0.05 - less exploration, more conservative
+    ent_coef: 0.05
     vf_coef: 0.5
     max_grad_norm: 0.5
     network_arch: [512, 512, 256, 128]

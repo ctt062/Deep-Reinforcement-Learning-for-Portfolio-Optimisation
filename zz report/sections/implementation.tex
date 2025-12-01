@@ -131,22 +131,25 @@ def _get_state(self):
     ])
 \end{verbatim}
 
-\subsubsection{Reward Calculation}
+\subsubsection{Reward Calculation with Aggressive Drawdown Control}
 
-The reward function implementation:
+The reward function implements aggressive drawdown penalties to achieve $<$10\% max drawdown target:
 \begin{verbatim}
 def _calculate_reward(self, portfolio_return):
-    # Base reward: portfolio return
     reward = portfolio_return
     
-    # Risk penalty for negative returns
-    if portfolio_return < 0:
-        reward -= self.risk_penalty * (portfolio_return ** 2)
+    # Aggressive drawdown penalties
+    drawdown = self._get_current_drawdown()
+    if drawdown > 0.02:  # Start penalty at 2% DD
+        penalty = self.risk_penalty * (drawdown * 10) ** 2
+        reward -= penalty
+    if drawdown > 0.08:  # Massive penalty above 8%
+        reward -= self.risk_penalty * 5.0
+    if drawdown > 0.10:  # Emergency penalty at 10%
+        reward -= self.risk_penalty * 10.0
     
     # Transaction cost penalty
-    turnover = np.sum(np.abs(
-        self.weights - self.prev_weights
-    ))
+    turnover = np.sum(np.abs(self.weights - self.prev_weights))
     reward -= self.transaction_cost * turnover
     
     return reward
@@ -169,14 +172,14 @@ action_noise = OrnsteinUhlenbeckActionNoise(
     sigma=0.1 * np.ones(n_actions)
 )
 
-# Create DDPG agent (final benchmark configuration)
+# Create DDPG agent (unified configuration)
 agent = DDPG(
     "MlpPolicy",
     env,
-    learning_rate=1e-4,
+    learning_rate=5e-5,      # Unified with PPO
     buffer_size=500000,
     learning_starts=10000,
-    batch_size=256,
+    batch_size=128,          # Unified with PPO
     tau=0.01,
     gamma=0.99,
     action_noise=action_noise,
@@ -197,14 +200,14 @@ from stable_baselines3 import PPO
 agent = PPO(
     "MlpPolicy",
     env,
-    learning_rate=5e-5,
+    learning_rate=5e-5,      # Unified with DDPG
     n_steps=2048,
-    batch_size=128,
+    batch_size=128,          # Unified with DDPG
     n_epochs=10,
     gamma=0.99,
     gae_lambda=0.95,
     clip_range=0.2,
-    ent_coef=0.05,
+    ent_coef=0.01,           # Reduced exploration
     policy_kwargs=dict(net_arch=[512, 512, 256, 128]),
     verbose=1
 )

@@ -25,12 +25,6 @@ where:
 
 The state representation enables the agent to learn patterns from historical price movements while maintaining awareness of current portfolio positioning.
 
-For our configuration with $n = 18$ assets and lookback window $L = 60$ days, the state vector dimension is:
-\begin{equation}
-d_s = n \times L \times 2 + n + n_{\text{features}} = 18 \times 60 \times 2 + 18 + 36 = 2214
-\end{equation}
-where the factor of 2 accounts for both returns and volatility features, and $n_{\text{features}} = 36$ represents additional technical indicators (SMA, EMA, momentum at multiple periods).
-
 \subsubsection{Action Space}
 
 The action $\ba_t \in \mathcal{A}$ represents the target portfolio allocation:
@@ -222,62 +216,50 @@ where:
 
 \subsubsection{Protective Put Strategy}
 
-The agent can allocate a hedge ratio $h_t^{\text{put}}$ to protective puts on the portfolio. The put payoff at expiration is:
+The agent can allocate a hedge ratio $h_t$ to protective puts on the portfolio. The put payoff at expiration is:
 
 \begin{equation}
-\Pi_t^{\text{put}} = h_t^{\text{put}} \cdot V_t \cdot \max\left(0, \frac{K_{\text{put}} - S_T}{S_0}\right) - P_0
+\Pi_t^{\text{put}} = h_t \cdot V_t \cdot \max\left(0, \frac{K - S_T}{S_0}\right) - P_0
 \end{equation}
 
-where $K_{\text{put}} = 0.96 \cdot S_0$ (4\% out-of-the-money). This provides portfolio insurance: when the portfolio declines below the strike price, the put option compensates for losses.
+This provides portfolio insurance: when the portfolio declines below the strike price, the put option compensates for losses.
 
-\subsubsection{Covered Call Strategy}
+\subsection{Risk Management Mechanisms}
 
-In addition to protective puts, the agent can write covered calls on the portfolio to generate premium income. The covered call payoff is:
+We implement two key risk management mechanisms to achieve the $<$10\% maximum drawdown target:
+
+\subsubsection{Volatility Targeting}
+
+Volatility targeting scales portfolio exposure based on realized volatility relative to a target (10\% annualized):
 
 \begin{equation}
-\Pi_t^{\text{call}} = C_0 - h_t^{\text{call}} \cdot V_t \cdot \max\left(0, \frac{S_T - K_{\text{call}}}{S_0}\right)
+\text{Vol Scalar} = \min\left(1.0, \frac{\sigma_{\text{target}}}{\sigma_{\text{realized}}}\right)
 \end{equation}
 
-where $K_{\text{call}} = 1.04 \cdot S_0$ (4\% out-of-the-money) and $C_0$ is the premium received. The covered call strategy:
-\begin{itemize}
-    \item Generates income through option premiums during low-volatility periods
-    \item Caps upside potential when portfolio value exceeds the strike price
-    \item Provides a buffer against small losses through premium income
-    \item Works synergistically with protective puts in a ``collar'' configuration
-\end{itemize}
+where $\sigma_{\text{realized}}$ is the 20-day rolling volatility. This scales down exposure when volatility exceeds the target.
 
-\subsubsection{Combined Options Overlay}
+\subsubsection{Progressive Position Reduction}
 
-The total options P\&L combines both strategies:
-\begin{equation}
-\Pi_t^{\text{options}} = \Pi_t^{\text{put}} + \Pi_t^{\text{call}}
-\end{equation}
-
-The agent learns to dynamically adjust hedge ratios $h_t^{\text{put}}$ and $h_t^{\text{call}}$ based on market conditions, with maximum ratios capped at 25\% of portfolio value for each strategy.
-
-\subsection{Stop-Loss Mechanism}
-
-We implement a tiered stop-loss system that reduces portfolio exposure as drawdowns deepen:
+We implement progressive position reduction as drawdowns deepen:
 
 \begin{equation}
-\text{Exposure Multiplier} = 
+\text{DD Scalar} = 
 \begin{cases}
-1.0 & \text{if } DD_t < 5\% \\
-0.75 & \text{if } 5\% \leq DD_t < 10\% \\
-0.50 & \text{if } 10\% \leq DD_t < 15\% \\
-0.25 & \text{if } DD_t \geq 15\%
+1.0 & \text{if } DD_t < 3\% \\
+1.0 - \frac{DD_t - 0.03}{0.09 - 0.03} \cdot 0.9 & \text{if } 3\% \leq DD_t < 9\% \\
+0.10 & \text{if } DD_t \geq 9\%
 \end{cases}
 \end{equation}
 
-where the drawdown is:
+The final exposure multiplier combines both mechanisms:
 \begin{equation}
-DD_t = \frac{V_t^{\text{peak}} - V_t}{V_t^{\text{peak}}}
+\text{Exposure} = \text{Vol Scalar} \times \text{DD Scalar}
 \end{equation}
 
 This mechanism provides systematic risk control by:
 \begin{enumerate}
-    \item Allowing full participation during normal market conditions
-    \item Progressively reducing exposure as losses accumulate
-    \item Preserving capital during severe drawdowns
-    \item Enabling participation in recovery through maintained (reduced) exposure
+    \item Scaling exposure inversely to realized volatility (volatility targeting)
+    \item Starting position reduction at 3\% drawdown
+    \item Reaching minimum 10\% exposure at 9\% drawdown
+    \item Preserving capital while maintaining recovery participation
 \end{enumerate}
