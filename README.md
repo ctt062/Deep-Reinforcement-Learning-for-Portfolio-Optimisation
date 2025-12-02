@@ -8,20 +8,20 @@
 
 ## Overview
 
-This project implements a deep reinforcement learning (DRL) framework for portfolio optimization with options overlay and advanced risk management. We formulate portfolio management as a Markov Decision Process (MDP) and train intelligent agents to maximize risk-adjusted returns while managing transaction costs, portfolio turnover, and downside risk.
+This project implements a deep reinforcement learning (DRL) framework for portfolio optimization with advanced risk management mechanisms. We formulate portfolio management as a Markov Decision Process (MDP) and train intelligent agents to maximize risk-adjusted returns while maintaining strict drawdown control through volatility targeting and progressive position reduction.
 
-**Final Result**: DDPG agent achieves **5.52 Sharpe ratio** with only **8.31% maximum drawdown** during the 2019-2020 test period (including COVID-19 crash), significantly outperforming PPO (1.85 Sharpe, 17.06% DD) and traditional benchmarks.
+**Final Result**: Both DDPG and PPO agents achieve comparable performance under unified hyperparameters, with **<10% maximum drawdown** during the 2019-2020 test period (including COVID-19 crash), demonstrating that proper risk management design is more important than algorithm selection.
 
 ### Key Features
 
 - 🤖 **Multiple DRL Algorithms**: DDPG and PPO implementations with continuous action spaces
 - 📊 **Custom Trading Environment**: Gymnasium-compatible environment with realistic constraints
 - 💰 **Transaction Cost Modeling**: Explicit turnover and slippage modeling (0.1% per trade)
-- 📈 **Rich Feature Engineering**: 60+ features including SMA, EMA, RSI, Momentum, Volatility
-- 🛡️ **Advanced Risk Management**: Options overlay (protective puts + covered calls) and tiered stop-loss system
+- 📈 **Rich Feature Engineering**: 252 features including SMA, EMA, Momentum, Volatility
+- 🛡️ **Advanced Risk Management**: Volatility targeting, progressive position reduction, aggressive drawdown penalties
 - 🎯 **Comprehensive Benchmarks**: Equal-weight, Mean-Variance, Momentum strategies
-- 📉 **Financial Metrics**: Sharpe ratio, Maximum Drawdown, Volatility, Turnover, Options P&L
-- 🏆 **Outstanding Performance**: DDPG achieves 5.52 Sharpe ratio with 8.31% max drawdown
+- 📉 **Financial Metrics**: Sharpe ratio, Maximum Drawdown, Volatility, Turnover, VaR, CVaR
+- 🏆 **Outstanding Performance**: Both agents achieve <10% max drawdown target with Sharpe >1.7
 - 🔬 **Academic Quality**: Clean, modular code with detailed docstrings and PEP 8 compliance
 
 ## Mathematical Formulation
@@ -29,22 +29,27 @@ This project implements a deep reinforcement learning (DRL) framework for portfo
 ### Markov Decision Process (MDP)
 
 **State Space**: $s_t = [p_{t-K:t}, x_t, w_{t-1}]$
-- Price history window: $p_{t-K:t} \in \mathbb{R}^{N \times K}$
-- Technical features: $x_t$ (SMA, EMA, Momentum)
+- Price history window: $p_{t-K:t} \in \mathbb{R}^{N \times K}$ (K=60 days)
+- Technical features: $x_t$ (252 features: SMA, EMA, Momentum, Volatility)
 - Previous weights: $w_{t-1} \in \mathbb{R}^N$
 
 **Action Space**: Portfolio weights $w_t \in \mathbb{R}^N$
-- Constraints: $\sum_{i=1}^N w_{t,i} = 1$, $w_{t,i} \geq 0$ (long-only)
+- Constraints: $\sum_{i=1}^N w_{t,i} \leq 1$, $w_{t,i} \geq 0$ (long-only)
 - Softmax parameterization: $w_t = \frac{\exp(z_t)}{\mathbf{1}^T \exp(z_t)}$
 
-**Reward Function**: Risk-adjusted return
-$$r_t = R_t - \lambda \hat{\sigma}^2_t$$
+**Reward Function**: Risk-adjusted return with aggressive drawdown penalties
+$$r_t = R_t - \lambda \cdot \text{DD}_t^2 \cdot \mathbb{1}(\text{DD}_t > 0.02)$$
 
 Where:
 - Gross return: $R_t^{\text{gross}} = w_{t-1}^T r_t$
 - Turnover: $\text{Turn}_t = \sum_{i=1}^N |w_{t,i} - w_{t-1,i}|$
 - Transaction cost: $\text{cost}_t = c \cdot \text{Turn}_t$
 - Net return: $R_t = R_t^{\text{gross}} - \text{cost}_t$
+- Drawdown penalty: $\lambda = 5.0$ (aggressive risk control)
+
+**Risk Management**:
+- Volatility targeting: $\text{Exposure} = \min(1.0, \frac{\sigma_{\text{target}}}{\sigma_{\text{realized}}})$
+- Progressive position reduction: Starts at 3% DD, reaches 10% exposure at 9% DD
 
 **Objective**: Maximize cumulative discounted reward
 $$J(\pi_\theta) = \mathbb{E}_{\pi_\theta}\left[\sum_{t=0}^T \gamma^t r_t\right]$$
@@ -81,44 +86,41 @@ Deep-Reinforcement-Learning-for-Portfolio-Optimisation/
 ├── src/                          # Source code
 │   ├── __init__.py
 │   ├── data_loader.py           # Data fetching and preprocessing
-│   ├── portfolio_env.py         # Custom Gym trading environment
+│   ├── portfolio_env.py         # Base portfolio environment
+│   ├── portfolio_env_with_options.py  # Environment with options overlay
 │   ├── agents.py                # DRL agent implementations
 │   ├── benchmarks.py            # Benchmark strategies
 │   ├── metrics.py               # Performance evaluation metrics
+│   ├── options_pricing.py       # Black-Scholes options pricing
 │   └── visualization.py         # Plotting utilities
 │
 ├── configs/                      # Configuration files
-│   └── config.yaml              # Hyperparameters and settings
+│   ├── config.yaml              # Default configuration
+│   └── config_final_benchmark.yaml  # Final benchmark configuration
+│
+├── scripts/                      # Executable scripts
+│   ├── train_and_evaluate_final.py  # Training and evaluation pipeline
+│   ├── evaluate_final_models.py     # Model evaluation
+│   ├── visualize_benchmark_comparison.py  # Visualization generation
+│   └── generate_additional_plots.py  # Additional visualizations
 │
 ├── notebooks/                    # Jupyter notebooks
 │   └── demo.ipynb               # Interactive demonstration
 │
-├── scripts/                      # Executable scripts
-│   ├── train.py                 # Training script
-│   └── evaluate.py              # Evaluation/backtesting script
-│
 ├── data/                         # Data storage (gitignored)
 ├── models/                       # Saved model checkpoints
-├── results/                      # Plots and tables
+├── results/                      # Evaluation results (JSON)
+├── visualizations/              # Generated plots
 │
 ├── requirements.txt              # Python dependencies
 ├── setup.py                      # Package setup
 ├── README.md                     # This file
-├── report.md                     # Results and analysis
 └── LICENSE                       # MIT License
 ```
 
 ## Usage
 
-### 1. Quick Start with Jupyter Notebook
-
-```bash
-jupyter notebook notebooks/demo.ipynb
-```
-
-The demo notebook provides an interactive walkthrough of the entire pipeline.
-
-### 2. Training Final Benchmark Models
+### 1. Training Final Benchmark Models
 
 ```bash
 # Train both DDPG and PPO on 2010-2018, test on 2019-2020
@@ -131,7 +133,7 @@ bash scripts/train_final_benchmark.sh
 bash scripts/watch_training.sh
 ```
 
-### 3. Evaluation and Visualization
+### 2. Evaluation and Visualization
 
 ```bash
 # Evaluate the final trained models
@@ -139,39 +141,42 @@ python scripts/evaluate_final_models.py
 
 # Generate comparison visualizations
 python scripts/visualize_benchmark_comparison.py
+
+# Generate additional plots (correlation matrix, training curves, weight allocation)
+python scripts/generate_additional_plots.py
 ```
 
 The results will be saved to:
 - Models: `models/` (ddpg_options_final.zip, ppo_options_final.zip)
-- Results: `results/` (JSON files with metrics, portfolio values, drawdowns)
+- Results: `results/` (JSON files with metrics, portfolio values, drawdowns, weights)
 - Visualizations: `visualizations/` (PNG charts)
 
-### 4. Custom Configuration
+### 3. Custom Configuration
 
-Edit `configs/config.yaml` to customize:
+Edit `configs/config_final_benchmark.yaml` to customize:
 - Asset universe and data period
 - Feature engineering parameters
 - Network architecture
-- Training hyperparameters
-- Transaction costs and constraints
+- Training hyperparameters (unified for fair comparison)
+- Risk management parameters
 
 ## Datasets
 
 The project uses **Yahoo Finance** data via the `yfinance` library:
 
-- **Assets**: 18 diversified assets across multiple sectors
-  - **Technology** (5): AAPL, MSFT, GOOGL, NVDA, AMZN
-  - **Healthcare** (3): JNJ, UNH, PFE
-  - **Financials** (2): JPM, V
-  - **Consumer** (2): WMT, COST
-  - **Equity Indices** (3): SPY, QQQ, IWM
-  - **Bonds** (2): TLT, AGG
+- **Assets**: 18 diversified assets across multiple sectors  
+  - **Technology** (5): AAPL, MSFT, GOOGL, NVDA, AMZN  
+  - **Healthcare** (3): JNJ, UNH, PFE  
+  - **Financials** (2): JPM, V  
+  - **Consumer** (2): WMT, COST  
+  - **Equity Indices** (3): SPY, QQQ, IWM  
+  - **Bonds** (2): TLT, AGG  
   - **Commodities** (1): GLD
 - **Period**: 2010-01-01 to 2020-12-31 (11 years)
 - **Frequency**: Daily closing prices
-- **Splits**: 
-  - Training: 2010-01-01 to 2018-12-31 (8 years, 2,064 samples)
-  - Testing: 2019-01-02 to 2020-12-30 (2 years, 504 samples)
+- **Splits**:  
+  - Training: 2010-01-01 to 2018-12-31 (8 years, 2,064 samples)  
+  - Testing: 2019-01-02 to 2020-12-30 (2 years, 504 samples)  
   - **Test period includes COVID-19 crash** for robustness validation
 
 Data is automatically downloaded and cached on first run. The dataset file is located at:
@@ -179,33 +184,31 @@ Data is automatically downloaded and cached on first run. The dataset file is lo
 
 ## Algorithms Implemented
 
-### 1. Deep Deterministic Policy Gradient (DDPG) - **Winner** 🏆
+### 1. Deep Deterministic Policy Gradient (DDPG)
 - **Continuous action space** for precise portfolio weights
 - **Actor-critic architecture** with separate policy and value networks
 - **Off-policy learning** with experience replay (500K buffer)
 - **Deterministic policy** for consistent decision-making
 - **Network**: Actor [512, 512, 256, 128], Critic [512, 512, 256, 128]
-- **Hyperparameters**: LR=1e-4, Batch=256, Gamma=0.99, Tau=0.01
-- **Options strategy**: Aggressive use of protective puts (44.87%) and covered calls (75.62%)
-- **Final Performance**: 5.52 Sharpe, 219% return, 8.31% max DD
+- **Unified Hyperparameters**: LR=5e-5, Batch=128, Gamma=0.99, Risk Penalty λ=5.0
+- **Final Performance**: Sharpe 1.78, Return 40.82%, Max DD 9.02%
 
 ### 2. Proximal Policy Optimization (PPO)
 - **Continuous action space** with stochastic policy
 - **Clipped surrogate objective** for stable training
 - **On-policy learning** with Generalized Advantage Estimation (GAE)
 - **Network**: [512, 512, 256, 128]
-- **Hyperparameters**: LR=5e-5, Batch=128, Epochs=10, Gamma=0.99
-- **Options strategy**: Minimal use (0.08% puts, 2.98% calls)
-- **Final Performance**: 1.85 Sharpe, 61% return, 17.06% max DD
+- **Unified Hyperparameters**: LR=5e-5, Batch=128, Epochs=10, Gamma=0.99, Risk Penalty λ=5.0
+- **Final Performance**: Sharpe 1.84, Return 42.73%, Max DD 9.05%
 
-### Key Difference
-DDPG's **off-policy learning** and **deterministic policy** allow it to effectively learn and execute the options overlay strategy, while PPO's on-policy approach failed to discover this profitable hedging behavior.
+### Key Finding
+With unified hyperparameters and proper risk management, both algorithms achieve comparable performance, demonstrating that **risk management design is more important than algorithm selection**.
 
 ## Benchmarks
 
 1. **Equal-Weight**: $w_i = 1/N$ for all assets
 2. **Mean-Variance Optimization**: Markowitz quadratic programming
-3. **Momentum**: Allocate based on trailing returns
+3. **SPY Buy-and-Hold**: 100% allocation to S&P 500 ETF
 
 ## Performance Metrics
 
@@ -214,40 +217,43 @@ DDPG's **off-policy learning** and **deterministic policy** allow it to effectiv
 - **Maximum Drawdown**: $\max_{t'<t} \frac{V_{t'} - V_t}{V_{t'}}$
 - **Annualized Volatility**: $\text{std}(R_t) \sqrt{252}$
 - **Average Turnover**: $\frac{1}{T}\sum_{t=1}^T \text{Turn}_t$
+- **Value at Risk (VaR)**: 95th percentile of daily returns
+- **Conditional VaR (CVaR)**: Expected loss beyond VaR threshold
 
 ## Results
 
-See `FINAL_BENCHMARK.md` for detailed analysis. Key visualizations available in `visualizations/`:
+See the full academic report in `zz report/main.pdf` for detailed analysis. Key visualizations available in `visualizations/`:
 - Sharpe ratio comparison
 - Cumulative portfolio values (2019-2020)
 - Drawdown analysis over time
 - Comprehensive metrics comparison
-- Performance summary table
+- Training curves
+- Portfolio weight allocation analysis
+- Asset correlation matrix
+- Risk management analysis
 
 ### Final Benchmark Results (2019-2020 Test Period)
 
-| Metric | DDPG | PPO | Target | Winner |
+| Metric | DDPG | PPO | Target | Status |
 |--------|------|-----|--------|--------|
-| **Sharpe Ratio** | **5.52** | 1.85 | > 1.0 | ✅ DDPG |
-| **Total Return** | **219.40%** | 61.12% | > 15% | ✅ DDPG |
-| **Annualized Return** | **93.31%** | 31.09% | > 15% | ✅ DDPG |
-| **Max Drawdown** | **8.31%** | 17.06% | < 10% | ✅ DDPG |
-| **Volatility** | 16.89% | 16.78% | - | Similar |
-| **Avg Turnover** | 1.83% | 1.53% | - | Both Low |
-| **Final Portfolio** | **$319,400** | $161,120 | - | ✅ DDPG |
-| **Options P&L** | **+$126,568** | +$5,758 | - | ✅ DDPG |
+| **Sharpe Ratio** | 1.78 | **1.84** | > 1.0 | ✅ Both |
+| **Total Return** | 40.82% | **42.73%** | > 15% | ✅ Both |
+| **Annualized Return** | 21.50% | **22.43%** | > 15% | ✅ Both |
+| **Max Drawdown** | **9.02%** | 9.05% | < 10% | ✅ Both |
+| **Volatility** | **10.96%** | 11.09% | - | Both Low |
+| **Turnover** | 0.04% | **0.04%** | - | Both Low |
+| **Final Portfolio** | $132,194 | **$142,729** | - | - |
 
-**DDPG Winner**: Achieves 3x higher Sharpe ratio, 3.6x higher returns, and 2x lower drawdown than PPO.
+**Key Finding**: Both agents achieve the <10% maximum drawdown target with comparable risk-adjusted returns, demonstrating the effectiveness of unified risk management mechanisms.
 
 ## Key Findings
 
-1. **DDPG significantly outperforms PPO** (5.52 vs 1.85 Sharpe) on all metrics
-2. **Options overlay is highly effective** - DDPG generated $126K profit through protective puts (44.87%) and covered calls (75.62%)
-3. **Risk management works** - DDPG max drawdown only 8.31% despite COVID-19 crash (met <10% target)
-4. **PPO failed to utilize options** - Only 0.08% protective puts, 2.98% covered calls
-5. **RL successfully generalizes** - Trained on 2010-2018, successfully handled unprecedented 2019-2020 volatility
-6. **Traditional methods fail** - Equal-weight (0.56 Sharpe, 43% DD), Mean-Variance (-0.40 Sharpe, 76% DD)
-7. **Off-policy learning advantage** - DDPG's deterministic policy and sample efficiency superior for portfolio optimization
+1. **Comparable Algorithm Performance**: With unified hyperparameters, both DDPG and PPO achieve similar performance (Sharpe: 1.78 vs 1.84)
+2. **Effective Risk Management**: Volatility targeting and progressive position reduction achieve <10% max drawdown target
+3. **COVID-19 Resilience**: Both agents limited losses to ~8% while the market declined 33.9%
+4. **Risk Management > Algorithm**: Proper risk management design is more important than algorithm selection
+5. **RL Successfully Generalizes**: Trained on 2010-2018, successfully handled unprecedented 2019-2020 volatility
+6. **Unified Configuration**: Fair comparison demonstrates that both off-policy (DDPG) and on-policy (PPO) approaches work well when properly configured
 
 ## Reproducibility
 
@@ -263,6 +269,8 @@ torch.manual_seed(42)
 random.seed(42)
 ```
 
+Configuration files are provided in `configs/config_final_benchmark.yaml` with all hyperparameters documented.
+
 ## Ethical Considerations
 
 ⚠️ **Important Disclaimers:**
@@ -275,13 +283,9 @@ random.seed(42)
 ## References
 
 1. Jiang, Z., Xu, D., & Liang, J. (2017). A Deep Reinforcement Learning Framework for the Financial Portfolio Management Problem. *arXiv preprint arXiv:1706.10059*.
-
 2. Mnih, V., et al. (2015). Human-level control through deep reinforcement learning. *Nature*, 518(7540), 529-533.
-
 3. Schulman, J., et al. (2017). Proximal Policy Optimization Algorithms. *arXiv preprint arXiv:1707.06347*.
-
 4. Lillicrap, T. P., et al. (2015). Continuous control with deep reinforcement learning. *arXiv preprint arXiv:1509.02971*.
-
 5. Markowitz, H. (1952). Portfolio Selection. *The Journal of Finance*, 7(1), 77-91.
 
 ## Contributing
