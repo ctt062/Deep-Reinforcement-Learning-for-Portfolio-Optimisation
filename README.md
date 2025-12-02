@@ -104,8 +104,8 @@ Deep-Reinforcement-Learning-for-Portfolio-Optimisation/
 │   ├── visualize_benchmark_comparison.py  # Visualization generation
 │   └── generate_additional_plots.py  # Additional visualizations
 │
-├── notebooks/                    # Jupyter notebooks
-│   └── demo.ipynb               # Interactive demonstration
+├── tests/                        # Unit tests
+│   └── test_all.py              # Test suite
 │
 ├── data/                         # Data storage (gitignored)
 ├── models/                       # Saved model checkpoints
