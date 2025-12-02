@@ -85,20 +85,14 @@ Both agents achieved the $<$10\% max drawdown target through the combined effect
     \item \textbf{Aggressive Reward Penalties}: Risk penalty $\lambda=5.0$ strongly discouraged drawdowns
 \end{enumerate}
 
-\begin{table}[htbp]
+Figure \ref{fig:risk_analysis} provides a comprehensive visualization of the risk management performance.
+
+\begin{figure}[htbp]
 \centering
-\caption{Risk management effectiveness}
-\label{tab:risk_effectiveness}
-\begin{tabular}{@{}lrr@{}}
-\toprule
-\textbf{Metric} & \textbf{DDPG} & \textbf{PPO} \\
-\midrule
-Max Drawdown & 9.02\% & 9.05\% \\
-Volatility & 10.96\% & 11.09\% \\
-VaR (95\%) & 1.08\% & 1.07\% \\
-\bottomrule
-\end{tabular}
-\end{table}
+\includegraphics[width=0.95\textwidth]{figures/risk_analysis.png}
+\caption{Risk management analysis: (a) Risk metrics comparison showing both agents meeting the $<$10\% max drawdown target, (b) Drawdown over time during test period, (c) Risk-adjusted return ratios, (d) Performance summary including win rates and total returns.}
+\label{fig:risk_analysis}
+\end{figure}
 
 Both agents learned to:
 \begin{itemize}

@@ -167,6 +167,36 @@ Both agents learned effective risk management:
     \item Balance return generation with risk control
 \end{enumerate}
 
+\subsection{Training Progress}
+
+Figure \ref{fig:training_curves} shows the training curves for both agents over 100,000 timesteps. DDPG's off-policy learning enables faster convergence and higher final rewards, while PPO's on-policy approach shows steadier but slower improvement.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/training_curves.png}
+\caption{Training curves showing episode reward progression. DDPG (left) achieves faster convergence due to off-policy learning, while PPO (right) shows more gradual improvement with higher variance.}
+\label{fig:training_curves}
+\end{figure}
+
+\subsection{Portfolio Weight Allocation}
+
+Figure \ref{fig:weight_allocation} analyzes the portfolio allocation strategies learned by each agent.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/weight_allocation.png}
+\caption{Portfolio weight allocation analysis: (a) Average sector allocation comparison, (b) DDPG sector allocation over time showing COVID-19 adjustment, (c) Top 5 asset holdings for DDPG, (d) Weight distribution showing DDPG's more concentrated vs PPO's more diversified approach.}
+\label{fig:weight_allocation}
+\end{figure}
+
+Key observations from the weight allocation analysis:
+\begin{itemize}
+    \item DDPG allocates more heavily to Technology (33\%) and Bonds (15\%) for growth and hedging
+    \item PPO maintains more balanced allocations across sectors, closer to equal-weight
+    \item During the COVID-19 crash, both agents increased bond allocations for risk reduction
+    \item DDPG's top holdings include TLT (8.9\%), NVDA (8.7\%), and SPY (7.3\%)
+\end{itemize}
+
 \subsection{Risk-Adjusted Performance Comparison}
 
 \begin{figure}[htbp]

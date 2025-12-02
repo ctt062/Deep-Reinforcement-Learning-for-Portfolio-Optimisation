@@ -49,6 +49,20 @@ The asset selection provides:
     \item \textbf{Data Quality}: Long history of reliable price data available
 \end{itemize}
 
+Figure \ref{fig:correlation_matrix} shows the correlation structure of asset returns during the training period. Notable patterns include:
+\begin{itemize}
+    \item High correlation among technology stocks (0.77-0.89)
+    \item Negative correlation between bonds (TLT, AGG) and equities (-0.02 to -0.15)
+    \item Gold (GLD) provides diversification with low correlation to most assets
+\end{itemize}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.95\textwidth]{figures/correlation_matrix.png}
+\caption{Asset return correlation matrix during training period (2010-2018). Technology stocks show high positive correlation while bonds (TLT, AGG) provide diversification benefits with negative correlation to equities.}
+\label{fig:correlation_matrix}
+\end{figure}
+
 \subsection{Data Period and Split}
 
 We use data from January 1, 2010 to December 31, 2020, providing over a decade of market history including various market regimes.
@@ -103,6 +117,7 @@ Unlike supervised learning, we do not use a separate validation set for the foll
     \item \textbf{Maximum Training Data}: All available pre-2019 data is used for training to maximize learning from diverse market conditions.
 \end{enumerate}
 
+\newpage
 \subsection{Hyperparameter Configuration}
 
 \subsubsection{Unified Hyperparameters}
@@ -168,6 +183,7 @@ Max gradient norm & 0.5 \\
 \end{tabular}
 \end{table}
 
+\newpage
 \subsubsection{Environment Configuration}
 
 \begin{table}[htbp]
