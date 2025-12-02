@@ -115,7 +115,7 @@ def save_metrics_json(metrics, filename):
     with open(filename, 'w') as f:
         json.dump(metrics, f, indent=2)
 
-def save_timeseries_json(results, prefix, dates=None):
+def save_timeseries_json(results, prefix, dates=None, asset_names=None):
     """Save time series data to JSON files"""
     # Portfolio values
     data_to_save = {
@@ -140,6 +140,20 @@ def save_timeseries_json(results, prefix, dates=None):
     
     with open(f"{prefix}_drawdowns.json", 'w') as f:
         json.dump(data_to_save, f, indent=2)
+    
+    # Weights history
+    weights_list = results['weights'][0]
+    weights_data = {
+        'weights': [[float(w) for w in weights] for weights in weights_list]
+    }
+    if dates is not None and len(dates) > 1:
+        # Weights correspond to steps (one less than portfolio values)
+        weights_data['dates'] = [str(d) for d in dates[1:len(weights_list)+1]]
+    if asset_names is not None:
+        weights_data['assets'] = asset_names
+    
+    with open(f"{prefix}_weights.json", 'w') as f:
+        json.dump(weights_data, f, indent=2)
 
 def main():
     print("=" * 70)
@@ -258,7 +272,8 @@ def main():
         # Portfolio values has one extra point (initial value before first step)
         num_values = len(results['portfolio_values'][0])
         dates = test_split['features'].index[:num_values].tolist()
-        save_timeseries_json(results, prefix, dates=dates)
+        asset_names = data_config.get('assets', [])
+        save_timeseries_json(results, prefix, dates=dates, asset_names=asset_names)
         
         print(f"\n✓ {agent_name.upper()} Results:")
         print(f"  Sharpe Ratio: {metrics['sharpe_ratio']:.4f}")
